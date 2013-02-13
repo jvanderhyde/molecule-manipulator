@@ -27,8 +27,10 @@ public class PrototypeApplet extends Applet {
 	public void init()
 	{
    
+		
+		
 		jmolPanel = new JmolPanel();
-                jmolPanel2 = new JmolPanel();
+        jmolPanel2 = new JmolPanel();
         
         jmolPanel.setPreferredSize(new Dimension(300,300));
         jmolPanel2.setPreferredSize(new Dimension(300, 300));
@@ -56,7 +58,11 @@ public class PrototypeApplet extends Applet {
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.X_AXIS));
         //logo for the program
         JPanel logo = new JPanel();
-        logo.setSize(new Dimension(150, 150));
+        JLabel logoLabel = new JLabel();
+		ImageIcon logoImage = new ImageIcon("logo.jpg", "MolMan");
+		logoLabel.setIcon(logoImage);
+		logo.add(logoLabel);
+        //logo.setSize(new Dimension(150, 150));
         //label for the text box
         JPanel mol = new JPanel();
         mol.setLayout(new FlowLayout());
@@ -73,14 +79,16 @@ public class PrototypeApplet extends Applet {
         JButton draw = new JButton("Draw");
         button.add(draw);
         //add elements to the top pane
+        
+        top.setAlignmentY(CENTER_ALIGNMENT);
         top.add(logo);
-        top.add(Box.createRigidArea(new Dimension(50, 150)));
+        //top.add(Box.createRigidArea(new Dimension(50, 150)));
         top.add(mol);
-        top.add(Box.createRigidArea(new Dimension(10, 150)));
+        //top.add(Box.createRigidArea(new Dimension(10, 150)));
         top.add(text);
-        top.add(Box.createRigidArea(new Dimension(10, 150)));
+        //top.add(Box.createRigidArea(new Dimension(10, 150)));
         top.add(button);
-        top.add(Box.createRigidArea(new Dimension(10, 150)));
+        //top.add(Box.createRigidArea(new Dimension(10, 150)));
         
         //creates tabbed display
         JTabbedPane tabs = new JTabbedPane();
@@ -113,7 +121,7 @@ public class PrototypeApplet extends Applet {
         JButton previous = new JButton("Previous");
         JButton next = new JButton("Next");
         //Label
-        JLabel molVar = new JLabel("Molecule Variations");
+        JLabel molVar = new JLabel("  Molecule Variations  ");
         //text output area
         JTextField out = new JTextField(45);
         out.setEditable(false);
