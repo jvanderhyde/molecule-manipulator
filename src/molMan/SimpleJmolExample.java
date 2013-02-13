@@ -79,7 +79,7 @@ public class SimpleJmolExample
         //viewer.openStringInline(pdb);
         viewer.evalString("select *; spacefill off; wireframe off; backbone 0.4;  ");
         viewer.evalString("color chain;  ");
-        viewer.evalString("rotate on;");
+        //viewer.evalString("rotate on;");
         this.viewer = viewer;
  
     }
