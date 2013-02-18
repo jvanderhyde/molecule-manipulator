@@ -2,6 +2,15 @@ package molMan;
 //Reference the required Java libraries
 import java.applet.Applet; 
 import java.awt.*; 
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 
 import javax.swing.*;
 
@@ -26,6 +35,29 @@ public class PrototypeApplet extends Applet {
 
 	public void init()
 	{
+		//Setup the textarea for the system output to go to.
+		JTextArea out = new JTextArea("Output", 7, 29);
+		JScrollPane scrollPane = new JScrollPane(out);
+		    
+		out.setEditable(false);
+		    
+		try 
+		{
+			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
+			System.setOut(output);
+			
+			System.out.println("Hello World");
+			
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}        
+
+		
+		
 		//Calculate the appropriate size for jmolPanel		
 		int jmolWidth = this.getWidth()/3;
 				
@@ -72,15 +104,34 @@ public class PrototypeApplet extends Applet {
         JButton draw = new JButton("Draw");
         button.add(draw);
         //add elements to the top pane
+        JPanel molName = new JPanel();
+        molName.setLayout(new BorderLayout());
+        molName.setAlignmentY(CENTER_ALIGNMENT);
+        JPanel borderTop = new JPanel();
+        borderTop.setLayout(new FlowLayout());
+        borderTop.add(mol);
+        borderTop.add(text);
+        borderTop.add(button);
+        JLabel currentMol = new JLabel("Current Molecule: 5PTI");
+        currentMol.setFont(new Font("Sans Serif", Font.BOLD, 24));
+        
+        JPanel currentPanel = new JPanel();
+        currentPanel.setLayout(new FlowLayout());
+        currentPanel.setAlignmentY(CENTER_ALIGNMENT);
+        currentPanel.add(currentMol);
+        molName.add(borderTop, BorderLayout.NORTH);
+        molName.add(currentPanel, BorderLayout.CENTER);
+        
         
         //this.setAlignmentY(CENTER_ALIGNMENT);
         top.add(logo);
         //top.add(Box.createRigidArea(new Dimension(50, 150)));
-        top.add(mol);
+       // top.add(mol);
         //top.add(Box.createRigidArea(new Dimension(10, 150)));
-        top.add(text);
+        //top.add(text);
         //top.add(Box.createRigidArea(new Dimension(10, 150)));
-        top.add(button);
+        //top.add(button);
+        top.add(molName);
         //top.add(Box.createRigidArea(new Dimension(10, 150)));
         
         //creates tabbed display
@@ -118,14 +169,17 @@ public class PrototypeApplet extends Applet {
         //Label
         JLabel molVar = new JLabel("  Molecule Variations  ");
         //text output area
-        JTextField out = new JTextField(45);
-        out.setEditable(false);
+        
+        JPanel scrollFlow = new JPanel();
+        scrollFlow.setLayout(new FlowLayout());
+        scrollFlow.add(scrollPane);
+        
         //set up bottom layout
-        bottom.add(Box.createRigidArea(new Dimension(300, 100)));
+        bottom.add(Box.createRigidArea(new Dimension(400, 100)));
         bottom.add(previous);
         bottom.add(molVar);
         bottom.add(next);
-        bottom.add(out);
+        bottom.add(scrollFlow);
         //adds each section to applet window
         //this.add(Box.createRigidArea(new Dimension(W, 50)));
         this.add(top);
@@ -143,13 +197,13 @@ public class PrototypeApplet extends Applet {
         JmolSimpleViewer view1 = jmolPanel1.getViewer();
         
  
-        view0.openFile("5PTI.pdb");
-        view1.openFile("5PTI.pdb");
+        //view0.openFile("5PTI.pdb");
+        //view1.openFile("5PTI.pdb");
         
         //viewer.evalString("select *; spacefill off; wireframe off; backbone 0.4;  ");
         //viewer.evalString("color chain;  ");
-        view0.evalString("rotate on;");
-        view1.evalString("rotate on;");
+        view0.evalString("load \":tylenol\"; rotate on;");
+        view1.evalString("load \":tylenol\"; rotate on;");
         
         this.viewer0 = view0; 
         this.viewer1 = view1;
@@ -194,4 +248,40 @@ public class PrototypeApplet extends Applet {
             viewer.renderScreenImage(g, rectClip.width, rectClip.height);
         }
     }
+	
+	private class RedirectedOut extends OutputStream 
+	{			
+		private PipedOutputStream out = new PipedOutputStream();
+		private Reader reader;
+		JTextArea txtArea;
+		
+		public RedirectedOut(JTextArea txtArea) throws IOException
+		{
+			PipedInputStream in = new PipedInputStream(out);
+			reader = new InputStreamReader(in, "UTF-8");
+			this.txtArea = txtArea;
+		}
+		
+		@Override
+		public void write(int i) throws IOException 
+		{
+			out.write(i);
+		}
+		public void write(byte[] bytes, int i, int i1) throws IOException 
+		{
+		    out.write(bytes, i, i1);
+		}
+		
+		public void flush() throws IOException
+		{
+			if(reader.ready())
+			{
+				char[] chars = new char[1024];
+				int n = reader.read(chars);
+				String txt = new String(chars, 0, n);
+				
+				txtArea.append(txt);
+			}
+		}
+	}
 } 
