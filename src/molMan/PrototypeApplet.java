@@ -31,13 +31,14 @@ public class PrototypeApplet extends Applet {
     JmolPanel jmolPanel1;
     private final int W = 1400;
     private final int H = 800;
-	
+    JScrollPane scrollPane;
+    String currentMolecule = "";
 
 	public void init()
 	{
 		//Setup the textarea for the system output to go to.
-		JTextArea out = new JTextArea("Output", 7, 29);
-		JScrollPane scrollPane = new JScrollPane(out);
+		JTextArea out = new JTextArea("Output", 7, 26);
+		scrollPane = new JScrollPane(out);
 		    
 		out.setEditable(false);
 		    
@@ -66,9 +67,35 @@ public class PrototypeApplet extends Applet {
         
         jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
         jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
+        
+        setUpGui();
         loadStructure();		
 		
-        //sets up main applet window
+       
+	}
+	
+	public void loadStructure() 
+	{
+		 
+        JmolSimpleViewer view0 = jmolPanel0.getViewer();
+        JmolSimpleViewer view1 = jmolPanel1.getViewer();
+        
+ 
+        //view0.openFile("5PTI.pdb");
+        //view1.openFile("5PTI.pdb");
+        
+        //viewer.evalString("select *; spacefill off; wireframe off; backbone 0.4;  ");
+        //viewer.evalString("color chain;  ");
+        view0.evalString("load \":caffeine\"; rotate on;");
+        view1.evalString("load \":caffeine\"; rotate on;");
+        
+        this.viewer0 = view0; 
+        this.viewer1 = view1;
+    }
+	
+	public void setUpGui()
+	{
+		 //sets up main applet window
         this.setPreferredSize(new Dimension(W,H));
         //sets up layout of main window
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -79,7 +106,7 @@ public class PrototypeApplet extends Applet {
         //sets layout for each section
         top.setLayout(new BoxLayout(top, BoxLayout.X_AXIS));
         middle.setLayout(new BoxLayout(middle, BoxLayout.X_AXIS));
-        bottom.setLayout(new BoxLayout(bottom, BoxLayout.X_AXIS));
+        bottom.setLayout(new BorderLayout());
         
         //logo for the program
         JPanel logo = new JPanel();
@@ -103,6 +130,10 @@ public class PrototypeApplet extends Applet {
         button.setLayout(new FlowLayout());
         JButton draw = new JButton("Draw");
         button.add(draw);
+        
+        //draw.addActionListener();
+        
+        
         //add elements to the top pane
         JPanel molName = new JPanel();
         molName.setLayout(new BorderLayout());
@@ -112,7 +143,8 @@ public class PrototypeApplet extends Applet {
         borderTop.add(mol);
         borderTop.add(text);
         borderTop.add(button);
-        JLabel currentMol = new JLabel("Current Molecule: 5PTI");
+        currentMolecule = new String("Caffeine");
+        JLabel currentMol = new JLabel("Current Molecule: "+currentMolecule);
         currentMol.setFont(new Font("Sans Serif", Font.BOLD, 24));
         
         JPanel currentPanel = new JPanel();
@@ -123,16 +155,8 @@ public class PrototypeApplet extends Applet {
         molName.add(currentPanel, BorderLayout.CENTER);
         
         
-        //this.setAlignmentY(CENTER_ALIGNMENT);
-        top.add(logo);
-        //top.add(Box.createRigidArea(new Dimension(50, 150)));
-       // top.add(mol);
-        //top.add(Box.createRigidArea(new Dimension(10, 150)));
-        //top.add(text);
-        //top.add(Box.createRigidArea(new Dimension(10, 150)));
-        //top.add(button);
+        top.add(logo);       
         top.add(molName);
-        //top.add(Box.createRigidArea(new Dimension(10, 150)));
         
         //creates tabbed display
         JTabbedPane tabs = new JTabbedPane();
@@ -170,45 +194,26 @@ public class PrototypeApplet extends Applet {
         JLabel molVar = new JLabel("  Molecule Variations  ");
         //text output area
         
+        JPanel buttonFlow = new JPanel();
+        buttonFlow.setLayout(new FlowLayout());
+        buttonFlow.add(previous);
+        buttonFlow.add(molVar);
+        buttonFlow.add(next);
+        
         JPanel scrollFlow = new JPanel();
         scrollFlow.setLayout(new FlowLayout());
         scrollFlow.add(scrollPane);
         
         //set up bottom layout
-        bottom.add(Box.createRigidArea(new Dimension(400, 100)));
-        bottom.add(previous);
-        bottom.add(molVar);
-        bottom.add(next);
-        bottom.add(scrollFlow);
+        bottom.add(scrollFlow, BorderLayout.WEST);
+        bottom.add(buttonFlow, BorderLayout.CENTER);
+        //bottom.add(Box.createRigidArea(new Dimension(400, 100)));
+        
         //adds each section to applet window
-        //this.add(Box.createRigidArea(new Dimension(W, 50)));
         this.add(top);
-        //this.add(Box.createRigidArea(new Dimension(W, 20)));
         this.add(middle);
-        //this.add(Box.createRigidArea(new Dimension(W, 5)));
         this.add(bottom);
-        //this.add(Box.createRigidArea(new Dimension(W, 2)));
 	}
-	
-	public void loadStructure() 
-	{
-		 
-        JmolSimpleViewer view0 = jmolPanel0.getViewer();
-        JmolSimpleViewer view1 = jmolPanel1.getViewer();
-        
- 
-        //view0.openFile("5PTI.pdb");
-        //view1.openFile("5PTI.pdb");
-        
-        //viewer.evalString("select *; spacefill off; wireframe off; backbone 0.4;  ");
-        //viewer.evalString("color chain;  ");
-        view0.evalString("load \":tylenol\"; rotate on;");
-        view1.evalString("load \":tylenol\"; rotate on;");
-        
-        this.viewer0 = view0; 
-        this.viewer1 = view1;
-    }
-	
 	
 	
 	//This code is basically copied from SimpleJmolExample....
