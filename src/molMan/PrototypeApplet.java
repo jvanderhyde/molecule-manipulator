@@ -22,7 +22,7 @@ import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
 import org.jmol.api.JmolSimpleViewer;
 
-//The applet code
+//The applet code  
 public class PrototypeApplet extends Applet {
 
 	private static final long serialVersionUID = 1L;	
