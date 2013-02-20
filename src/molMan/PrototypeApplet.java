@@ -2,6 +2,8 @@ package molMan;
 //Reference the required Java libraries
 import java.applet.Applet; 
 import java.awt.*; 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -33,16 +35,20 @@ public class PrototypeApplet extends Applet {
     private final int H = 800;
     JScrollPane scrollPane;
     String currentMolecule = "";
+    JButton selectButton = new JButton("Select");
+    JTextField input = new JTextField(30);
+    JLabel currentMolLabel = new JLabel("");
+    JmolSimpleViewer view0;
+    JmolSimpleViewer view1;
 
 	public void init()
-	{
+	{	
 		//Setup the textarea for the system output to go to.
 		JTextArea out = new JTextArea("Output", 7, 26);
 		scrollPane = new JScrollPane(out);
-		    
 		out.setEditable(false);
-		    
-		try 
+		   
+		try //Redirect System.out to run to our output box.
 		{
 			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
 			System.setOut(output);
@@ -56,8 +62,6 @@ public class PrototypeApplet extends Applet {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}        
-
-		
 		
 		//Calculate the appropriate size for jmolPanel		
 		int jmolWidth = this.getWidth()/3;
@@ -69,23 +73,20 @@ public class PrototypeApplet extends Applet {
         jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
         
         setUpGui();
-        loadStructure();		
-		
-       
+        loadStructure();		     
 	}
 	
 	public void loadStructure() 
-	{
-		 
-        JmolSimpleViewer view0 = jmolPanel0.getViewer();
-        JmolSimpleViewer view1 = jmolPanel1.getViewer();
-        
- 
+	{ 
+        view0 = jmolPanel0.getViewer();
+        view1 = jmolPanel1.getViewer();
+         
         //view0.openFile("5PTI.pdb");
         //view1.openFile("5PTI.pdb");
         
         //viewer.evalString("select *; spacefill off; wireframe off; backbone 0.4;  ");
         //viewer.evalString("color chain;  ");
+        
         view0.evalString("load \":caffeine\"; rotate on;");
         view1.evalString("load \":caffeine\"; rotate on;");
         
@@ -95,7 +96,8 @@ public class PrototypeApplet extends Applet {
 	
 	public void setUpGui()
 	{
-		 //sets up main applet window
+		///////////////////////////MAIN WINDOW\\\\\\\\\\\\\\\\\\\\\\\\
+		//sets up main applet window
         this.setPreferredSize(new Dimension(W,H));
         //sets up layout of main window
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -108,33 +110,35 @@ public class PrototypeApplet extends Applet {
         middle.setLayout(new BoxLayout(middle, BoxLayout.X_AXIS));
         bottom.setLayout(new BorderLayout());
         
+        
+        ///////////////////////////TOP SECTION\\\\\\\\\\\\\\\\\\\\\\\\
         //logo for the program
         JPanel logo = new JPanel();
         JLabel logoLabel = new JLabel();
 		ImageIcon logoImage = new ImageIcon("logo.jpg", "MolMan");
 		logoLabel.setIcon(logoImage);
 		logo.add(logoLabel);
-        //logo.setSize(new Dimension(150, 150));
-        //label for the text box
+
+		//label for the text box
         JPanel mol = new JPanel();
         mol.setLayout(new FlowLayout());
         JLabel molLabel = new JLabel("Please input a molecular formula:");
         mol.add(molLabel);
+        
         //text box
         JPanel text = new JPanel();
         text.setLayout(new FlowLayout());
-        JTextField input = new JTextField(30);
         text.add(input);
+        
         //draw button
         JPanel button = new JPanel();
         button.setLayout(new FlowLayout());
-        JButton draw = new JButton("Draw");
-        button.add(draw);
-        
-        //draw.addActionListener();
-        
-        
-        //add elements to the top pane
+        ButtonListener handler = new ButtonListener();
+        selectButton.addActionListener(handler);
+        button.add(selectButton);
+        input.addActionListener(handler);
+     
+        //add elements to the NORTH border
         JPanel molName = new JPanel();
         molName.setLayout(new BorderLayout());
         molName.setAlignmentY(CENTER_ALIGNMENT);
@@ -143,21 +147,24 @@ public class PrototypeApplet extends Applet {
         borderTop.add(mol);
         borderTop.add(text);
         borderTop.add(button);
-        currentMolecule = new String("Caffeine");
-        JLabel currentMol = new JLabel("Current Molecule: "+currentMolecule);
-        currentMol.setFont(new Font("Sans Serif", Font.BOLD, 24));
-        
+
+        //add elements to SOUTH border
+        currentMolLabel = new JLabel("Current Molecule: Caffeine");
+        currentMolLabel.setFont(new Font("Sans Serif", Font.BOLD, 24));
         JPanel currentPanel = new JPanel();
         currentPanel.setLayout(new FlowLayout());
         currentPanel.setAlignmentY(CENTER_ALIGNMENT);
-        currentPanel.add(currentMol);
+        currentPanel.add(currentMolLabel);
+        
+        //Add border to the pane
         molName.add(borderTop, BorderLayout.NORTH);
         molName.add(currentPanel, BorderLayout.CENTER);
         
-        
+        //Add all panels to the top
         top.add(logo);       
         top.add(molName);
         
+        ///////////////////////////MIDDLE SECTION\\\\\\\\\\\\\\\\\\\\\\\\
         //creates tabbed display
         JTabbedPane tabs = new JTabbedPane();
         JPanel rot, inv, rotInv, res;
@@ -178,15 +185,11 @@ public class PrototypeApplet extends Applet {
         molViewer1.setLayout(new FlowLayout());
         molViewer0.add(jmolPanel0);
         molViewer1.add(jmolPanel1);
-        //middle.add(Box.createRigidArea(new Dimension(5, 300)));
         middle.add(tabs);
-        //middle.add(Box.createRigidArea(new Dimension(10, 300)));
         middle.add(molViewer0);
-        //middle.add(Box.createRigidArea(new Dimension(10, 300)));
         middle.add(molViewer1);
-        //middle.add(Box.createRigidArea(new Dimension(20, 300)));
         
-        
+        ///////////////////////////BOTTOM SECTION\\\\\\\\\\\\\\\\\\\\\\\\
         //create previous/next buttons
         JButton previous = new JButton("Previous");
         JButton next = new JButton("Next");
@@ -213,6 +216,7 @@ public class PrototypeApplet extends Applet {
         this.add(top);
         this.add(middle);
         this.add(bottom);
+        
 	}
 	
 	
@@ -288,5 +292,21 @@ public class PrototypeApplet extends Applet {
 				txtArea.append(txt);
 			}
 		}
+	}
+	
+	private class ButtonListener implements ActionListener 
+	{
+
+		public void actionPerformed(ActionEvent e) 
+		{
+			if (e.getSource() == selectButton || e.getSource() == input)
+			{
+				currentMolecule = input.getText();
+				System.out.println("Current Molecule Set to " +currentMolecule);
+				view0.evalString("load \":"+currentMolecule+"\";");
+		        view1.evalString("load \":"+currentMolecule+"\";");
+				currentMolLabel.setText("Current Molecule: "+currentMolecule);				
+			}				
+		}		
 	}
 } 
