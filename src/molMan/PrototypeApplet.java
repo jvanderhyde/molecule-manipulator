@@ -1,3 +1,14 @@
+/*
+ * TODO:
+ * 	- Add loading animation when loading new molecule.
+ * 	- Add more control buttons beneath the JMol windows (Rotate On/Off, Recenter, Select All/None)
+ * 	- Fix Logo (Transparency).
+ * 	- Parse input from textbox (make sure that it is a real molecule...). 
+ * 	- Add reflection Tab.
+ * 	- Fill all the tab functions.
+ */
+
+
 package molMan;
 //Reference the required Java libraries
 import java.applet.Applet; 
@@ -36,10 +47,12 @@ public class PrototypeApplet extends Applet {
     JScrollPane scrollPane;
     String currentMolecule = "";
     JButton selectButton = new JButton("Select");
+    JButton rotateButton = new JButton("Rotate On/Off");
     JTextField input = new JTextField(30);
     JLabel currentMolLabel = new JLabel("");
     JmolSimpleViewer view0;
     JmolSimpleViewer view1;
+    Boolean rotateOn = false;
 
 	public void init()
 	{	
@@ -87,8 +100,8 @@ public class PrototypeApplet extends Applet {
         //viewer.evalString("select *; spacefill off; wireframe off; backbone 0.4;  ");
         //viewer.evalString("color chain;  ");
         
-        view0.evalString("load \":caffeine\"; rotate on;");
-        view1.evalString("load \":caffeine\"; rotate on;");
+        view0.evalString("load \":caffeine\";");
+        view1.evalString("load \":caffeine\";");
         
         this.viewer0 = view0; 
         this.viewer1 = view1;
@@ -197,11 +210,21 @@ public class PrototypeApplet extends Applet {
         JLabel molVar = new JLabel("  Molecule Variations  ");
         //text output area
         
+        JPanel southCenterBorder = new JPanel();
+        southCenterBorder.setLayout(new BorderLayout());
         JPanel buttonFlow = new JPanel();
         buttonFlow.setLayout(new FlowLayout());
         buttonFlow.add(previous);
         buttonFlow.add(molVar);
         buttonFlow.add(next);
+        
+        rotateButton.addActionListener(handler);
+        JPanel rotButFlow = new JPanel();
+        rotButFlow.setLayout(new FlowLayout());
+        rotButFlow.add(rotateButton);
+        
+        southCenterBorder.add(rotButFlow, BorderLayout.NORTH);
+        southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
         
         JPanel scrollFlow = new JPanel();
         scrollFlow.setLayout(new FlowLayout());
@@ -209,8 +232,7 @@ public class PrototypeApplet extends Applet {
         
         //set up bottom layout
         bottom.add(scrollFlow, BorderLayout.WEST);
-        bottom.add(buttonFlow, BorderLayout.CENTER);
-        //bottom.add(Box.createRigidArea(new Dimension(400, 100)));
+        bottom.add(southCenterBorder, BorderLayout.CENTER);
         
         //adds each section to applet window
         this.add(top);
@@ -306,7 +328,22 @@ public class PrototypeApplet extends Applet {
 				view0.evalString("load \":"+currentMolecule+"\";");
 		        view1.evalString("load \":"+currentMolecule+"\";");
 				currentMolLabel.setText("Current Molecule: "+currentMolecule);				
-			}				
+			}	
+			else if(e.getSource()== rotateButton)
+			{
+				if(rotateOn)
+				{
+					view0.evalString("rotate off;");
+			        view1.evalString("rotate off;");
+			        rotateOn = false;
+				}
+				else
+				{
+					view0.evalString("rotate on;");
+			        view1.evalString("rotate on;");
+			        rotateOn = true;
+				}		        
+			}
 		}		
 	}
 } 
