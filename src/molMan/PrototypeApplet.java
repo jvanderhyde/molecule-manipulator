@@ -5,7 +5,7 @@
  * 	- Fix Logo (Transparency).
  * 	- Parse input from textbox (make sure that it is a real molecule...). 
  * 	- Add reflection Tab.
- * 	- Fill all the tab functions.
+ * 	- Fill all the tab functions. 
  */
 
 
