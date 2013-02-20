@@ -1,12 +1,9 @@
 package molMan;
 //Reference the required Java libraries
-import java.applet.Applet; 
+import java.applet.Applet;
 import java.awt.*; 
 
 import javax.swing.*;
-
-import molMan.SimpleJmolExample.JmolPanel;
-
 import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
 import org.jmol.api.JmolSimpleViewer;
@@ -24,6 +21,7 @@ public class PrototypeApplet extends Applet {
     private final int H = 800;
 	
 
+    @Override
 	public void init()
 	{
    
@@ -189,6 +187,7 @@ public class PrototypeApplet extends Applet {
         final Dimension currentSize = new Dimension();
         final Rectangle rectClip = new Rectangle();
  
+            @Override
         public void paint(Graphics g) 
         {
             getSize(currentSize);
