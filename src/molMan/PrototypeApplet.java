@@ -22,12 +22,12 @@ import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
 import org.jmol.api.JmolSimpleViewer;
 
-//The applet code
+//The applet code  
 public class PrototypeApplet extends Applet {
 
-        private static final long serialVersionUID = 1L;        
-        JmolSimpleViewer viewer0;
-        JmolSimpleViewer viewer1;
+	private static final long serialVersionUID = 1L;	
+	JmolSimpleViewer viewer0;
+	JmolSimpleViewer viewer1;
     String structurePbd;
     JmolPanel jmolPanel0;
     JmolPanel jmolPanel1;
@@ -41,43 +41,43 @@ public class PrototypeApplet extends Applet {
     JmolSimpleViewer view0;
     JmolSimpleViewer view1;
 
-        public void init()
-        {       
-                //Setup the textarea for the system output to go to.
-                JTextArea out = new JTextArea("Output", 7, 26);
-                scrollPane = new JScrollPane(out);
-                out.setEditable(false);
-                   
-                try //Redirect System.out to run to our output box.
-                {
-                        PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
-                        System.setOut(output);
-                        
-                        System.out.println("Hello World");
-                        
-                } catch (UnsupportedEncodingException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                } catch (IOException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                }        
-                
-                //Calculate the appropriate size for jmolPanel          
-                int jmolWidth = this.getWidth()/3;
-                                
-                jmolPanel0 = new JmolPanel();
+	public void init()
+	{	
+		//Setup the textarea for the system output to go to.
+		JTextArea out = new JTextArea("Output", 7, 26);
+		scrollPane = new JScrollPane(out);
+		out.setEditable(false);
+		   
+		try //Redirect System.out to run to our output box.
+		{
+			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
+			System.setOut(output);
+			
+			System.out.println("Hello World");
+			
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}        
+		
+		//Calculate the appropriate size for jmolPanel		
+		int jmolWidth = this.getWidth()/3;
+				
+		jmolPanel0 = new JmolPanel();
         jmolPanel1 = new JmolPanel();
         
         jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
         jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
         
         setUpGui();
-        loadStructure();                     
-        }
-        
-        public void loadStructure() 
-        { 
+        loadStructure();		     
+	}
+	
+	public void loadStructure() 
+	{ 
         view0 = jmolPanel0.getViewer();
         view1 = jmolPanel1.getViewer();
          
@@ -93,11 +93,11 @@ public class PrototypeApplet extends Applet {
         this.viewer0 = view0; 
         this.viewer1 = view1;
     }
-        
-        public void setUpGui()
-        {
-                ///////////////////////////MAIN WINDOW\\\\\\\\\\\\\\\\\\\\\\\\
-                //sets up main applet window
+	
+	public void setUpGui()
+	{
+		///////////////////////////MAIN WINDOW\\\\\\\\\\\\\\\\\\\\\\\\
+		//sets up main applet window
         this.setPreferredSize(new Dimension(W,H));
         //sets up layout of main window
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -115,11 +115,11 @@ public class PrototypeApplet extends Applet {
         //logo for the program
         JPanel logo = new JPanel();
         JLabel logoLabel = new JLabel();
-                ImageIcon logoImage = new ImageIcon("logo.jpg", "MolMan");
-                logoLabel.setIcon(logoImage);
-                logo.add(logoLabel);
+		ImageIcon logoImage = new ImageIcon("logo.jpg", "MolMan");
+		logoLabel.setIcon(logoImage);
+		logo.add(logoLabel);
 
-                //label for the text box
+		//label for the text box
         JPanel mol = new JPanel();
         mol.setLayout(new FlowLayout());
         JLabel molLabel = new JLabel("Please input a molecular formula:");
@@ -217,12 +217,12 @@ public class PrototypeApplet extends Applet {
         this.add(middle);
         this.add(bottom);
         
-        }
-        
-        
-        //This code is basically copied from SimpleJmolExample....
-        static class JmolPanel extends JPanel 
-        {
+	}
+	
+	
+	//This code is basically copied from SimpleJmolExample....
+	static class JmolPanel extends JPanel 
+	{
         /**
          * 
          */
@@ -257,56 +257,56 @@ public class PrototypeApplet extends Applet {
             viewer.renderScreenImage(g, rectClip.width, rectClip.height);
         }
     }
-        
-        private class RedirectedOut extends OutputStream 
-        {                       
-                private PipedOutputStream out = new PipedOutputStream();
-                private Reader reader;
-                JTextArea txtArea;
-                
-                public RedirectedOut(JTextArea txtArea) throws IOException
-                {
-                        PipedInputStream in = new PipedInputStream(out);
-                        reader = new InputStreamReader(in, "UTF-8");
-                        this.txtArea = txtArea;
-                }
-                
-                @Override
-                public void write(int i) throws IOException 
-                {
-                        out.write(i);
-                }
-                public void write(byte[] bytes, int i, int i1) throws IOException 
-                {
-                    out.write(bytes, i, i1);
-                }
-                
-                public void flush() throws IOException
-                {
-                        if(reader.ready())
-                        {
-                                char[] chars = new char[1024];
-                                int n = reader.read(chars);
-                                String txt = new String(chars, 0, n);
-                                
-                                txtArea.append(txt);
-                        }
-                }
-        }
-        
-        private class ButtonListener implements ActionListener 
-        {
+	
+	private class RedirectedOut extends OutputStream 
+	{			
+		private PipedOutputStream out = new PipedOutputStream();
+		private Reader reader;
+		JTextArea txtArea;
+		
+		public RedirectedOut(JTextArea txtArea) throws IOException
+		{
+			PipedInputStream in = new PipedInputStream(out);
+			reader = new InputStreamReader(in, "UTF-8");
+			this.txtArea = txtArea;
+		}
+		
+		@Override
+		public void write(int i) throws IOException 
+		{
+			out.write(i);
+		}
+		public void write(byte[] bytes, int i, int i1) throws IOException 
+		{
+		    out.write(bytes, i, i1);
+		}
+		
+		public void flush() throws IOException
+		{
+			if(reader.ready())
+			{
+				char[] chars = new char[1024];
+				int n = reader.read(chars);
+				String txt = new String(chars, 0, n);
+				
+				txtArea.append(txt);
+			}
+		}
+	}
+	
+	private class ButtonListener implements ActionListener 
+	{
 
-                public void actionPerformed(ActionEvent e) 
-                {
-                        if (e.getSource() == selectButton || e.getSource() == input)
-                        {
-                                currentMolecule = input.getText();
-                                System.out.println("Current Molecule Set to " +currentMolecule);
-                                view0.evalString("load \":"+currentMolecule+"\";");
-                        view1.evalString("load \":"+currentMolecule+"\";");
-                                currentMolLabel.setText("Current Molecule: "+currentMolecule);                          
-                        }                               
-                }               
-        }
+		public void actionPerformed(ActionEvent e) 
+		{
+			if (e.getSource() == selectButton || e.getSource() == input)
+			{
+				currentMolecule = input.getText();
+				System.out.println("Current Molecule Set to " +currentMolecule);
+				view0.evalString("load \":"+currentMolecule+"\";");
+		        view1.evalString("load \":"+currentMolecule+"\";");
+				currentMolLabel.setText("Current Molecule: "+currentMolecule);				
+			}				
+		}		
+	}
 } 
