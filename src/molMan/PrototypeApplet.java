@@ -1,11 +1,10 @@
 /*
  * TODO:
  * 	- Add loading animation when loading new molecule.
- * 	- Add more control buttons beneath the JMol windows (Rotate On/Off, Recenter, Select All/None)
- * 	- Fix Logo (Transparency).
+ * 	- Add more control buttons beneath the JMol windows (Select All/None)
  * 	- Parse input from textbox (make sure that it is a real molecule...). 
- * 	- Add reflection Tab.
  * 	- Fill all the tab functions. 
+ * 	- Add Transformation animations
  */
 
 
@@ -15,6 +14,8 @@ import java.applet.Applet;
 import java.awt.*; 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -46,28 +47,47 @@ public class PrototypeApplet extends Applet {
     private final int H = 800;
     JScrollPane scrollPane;
     String currentMolecule = "";
-    JButton selectButton = new JButton("Select");
-    JButton rotateButton = new JButton("Rotate On/Off");
     JTextField input = new JTextField(30);
     JLabel currentMolLabel = new JLabel("");
     JmolSimpleViewer view0;
     JmolSimpleViewer view1;
+    JTextArea out;
+    
+    ////////////STATE VARIABLES\\\\\\\\\\\\
     Boolean rotateOn = false;
+    Boolean inverted = false;
+    
+    ////////////BUTTONS\\\\\\\\\\\\
+    JButton selectButton = new JButton("Select");
+    JButton rotateButton = new JButton("Rotate On/Off");
+    JButton invertButton = new JButton("Invert");
+    JButton reset0Button = new JButton("Reset");
+    JButton reset1Button = new JButton("Reset");
 
 	public void init()
 	{	
 		//Setup the textarea for the system output to go to.
-		JTextArea out = new JTextArea("Output", 7, 26);
+		out = new JTextArea("Output", 7, 26);
 		scrollPane = new JScrollPane(out);
+		//Make the ScrollPane autoScroll when something is added.
+		//Found at : http://www.coderanch.com/t/329964/GUI/java/JScrollpane-Force-autoscroll-bottom
+		scrollPane.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener()
+		{
+			public void adjustmentValueChanged(AdjustmentEvent e)
+			{
+				//I think that the 1000 here means that it will be able to adjust the scroll
+				//  if the output is not more then 1000 lines input at a time...
+				out.select(out.getHeight()+1000,0);
+			}
+		});
+		
 		out.setEditable(false);
+		
 		   
 		try //Redirect System.out to run to our output box.
 		{
 			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
-			System.setOut(output);
-			
-			System.out.println("Hello World");
-			
+			System.setOut(output);			
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -86,7 +106,7 @@ public class PrototypeApplet extends Applet {
         jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
         
         setUpGui();
-        loadStructure();		     
+        loadStructure();
 	}
 	
 	public void loadStructure() 
@@ -128,7 +148,7 @@ public class PrototypeApplet extends Applet {
         //logo for the program
         JPanel logo = new JPanel();
         JLabel logoLabel = new JLabel();
-		ImageIcon logoImage = new ImageIcon("logo.jpg", "MolMan");
+		ImageIcon logoImage = new ImageIcon("logo.png", "MolMan");
 		logoLabel.setIcon(logoImage);
 		logo.add(logoLabel);
 
@@ -182,14 +202,20 @@ public class PrototypeApplet extends Applet {
         JTabbedPane tabs = new JTabbedPane();
         JPanel rot, inv, rotInv, res;
         rot = new JPanel();
+        
         inv = new JPanel();
+        JPanel invButFlow = new JPanel(new FlowLayout()); 
+        invertButton.addActionListener(handler);
+        invButFlow.add(invertButton);
+        inv.add(invButFlow);
+        
         rotInv = new JPanel();
         res = new JPanel();
         tabs.setTabPlacement(JTabbedPane.LEFT);
         tabs.addTab("Rotation", null, rot, "Rotate the molecule around an axis");
         tabs.addTab("Inversion", null, inv, "Invert the molecule through a plane");
         tabs.addTab("Rot & Inv", null, rotInv, "");
-        tabs.addTab("Reset", null, res, "View GPA here");
+        tabs.addTab("Reflection", null, res, "Reflect the molecule through a plane");
         
         //adds tabbed display to the middle of the layout
         JPanel molViewer0 = new JPanel();
@@ -218,17 +244,30 @@ public class PrototypeApplet extends Applet {
         buttonFlow.add(molVar);
         buttonFlow.add(next);
         
-        rotateButton.addActionListener(handler);
-        JPanel rotButFlow = new JPanel();
-        rotButFlow.setLayout(new FlowLayout());
+        JPanel reset0ButFlow = new JPanel(new FlowLayout());
+        reset0Button.addActionListener(handler);
+        reset0ButFlow.add(reset0Button);
+        
+        JPanel rotButFlow = new JPanel(new FlowLayout());
+        rotateButton.addActionListener(handler);        
         rotButFlow.add(rotateButton);
         
-        southCenterBorder.add(rotButFlow, BorderLayout.NORTH);
+        JPanel reset1ButFlow = new JPanel(new FlowLayout());
+        reset1Button.addActionListener(handler);
+        reset1ButFlow.add(reset1Button);
+        
+        JPanel controlButsFlow = new JPanel(new FlowLayout());
+        controlButsFlow.add(reset0ButFlow);
+        controlButsFlow.add(rotButFlow);
+        controlButsFlow.add(reset1ButFlow);
+        
+        southCenterBorder.add(controlButsFlow, BorderLayout.NORTH);
         southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
         
         JPanel scrollFlow = new JPanel();
         scrollFlow.setLayout(new FlowLayout());
         scrollFlow.add(scrollPane);
+        
         
         //set up bottom layout
         bottom.add(scrollFlow, BorderLayout.WEST);
@@ -242,7 +281,7 @@ public class PrototypeApplet extends Applet {
 	}
 	
 	
-	//This code is basically copied from SimpleJmolExample....
+	//This code found at: http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
 	static class JmolPanel extends JPanel 
 	{
         /**
@@ -343,6 +382,21 @@ public class PrototypeApplet extends Applet {
 			        view1.evalString("rotate on;");
 			        rotateOn = true;
 				}		        
+			}
+			else if(e.getSource() == invertButton)
+			{
+				view1.evalString("select all; invertSelected POINT {0,0,0};");
+				inverted = !inverted;
+			}
+			else if(e.getSource() == reset0Button) view0.evalString("reset;");
+			else if(e.getSource() == reset1Button) 
+			{
+				view1.evalString("reset;");
+				if(inverted) 
+				{
+					view1.evalString("select all; invertSelected POINT {0,0,0};");
+					inverted = !inverted;
+				}
 			}
 		}		
 	}
