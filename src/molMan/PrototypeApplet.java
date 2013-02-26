@@ -63,6 +63,13 @@ public class PrototypeApplet extends Applet {
     JButton invertButton = new JButton("Invert");
     JButton reset0Button = new JButton("Reset");
     JButton reset1Button = new JButton("Reset");
+    JButton rotButton = new JButton("Rotate");
+    JRadioButton rotAxisX = new JRadioButton("X");
+    JRadioButton rotAxisY = new JRadioButton("Y");
+    JRadioButton rotAxisZ = new JRadioButton("Z");
+    JRadioButton rotAxisNegX = new JRadioButton("-X");
+    JRadioButton rotAxisNegY = new JRadioButton("-Y");
+    JRadioButton rotAxisNegZ = new JRadioButton("-Z");
 
 	public void init()
 	{	
@@ -201,7 +208,35 @@ public class PrototypeApplet extends Applet {
         //creates tabbed display
         JTabbedPane tabs = new JTabbedPane();
         JPanel rot, inv, rotInv, res;
+        
         rot = new JPanel();
+        rot.setLayout(new BoxLayout(rot, BoxLayout.Y_AXIS));
+        JPanel rotationButFlow = new JPanel(new FlowLayout()); 
+        rotButton.addActionListener(handler);
+        rotationButFlow.add(rotButton);
+        JLabel rotationTitle = new JLabel("ROTATION");
+        rotationTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+        ButtonGroup axis = new ButtonGroup();
+        axis.add(rotAxisX);
+        axis.add(rotAxisY);
+        axis.add(rotAxisZ);
+        axis.add(rotAxisNegX);
+        axis.add(rotAxisNegY);
+        axis.add(rotAxisNegZ);
+        rotAxisX.addActionListener(handler);
+        rotAxisY.addActionListener(handler);
+        rotAxisZ.addActionListener(handler);
+        rotAxisNegX.addActionListener(handler);
+        rotAxisNegY.addActionListener(handler);
+        rotAxisNegZ.addActionListener(handler);        
+        rot.add(rotationTitle);
+        rot.add(rotAxisX);
+        rot.add(rotAxisY);
+        rot.add(rotAxisZ);
+        rot.add(rotAxisNegX);
+        rot.add(rotAxisNegY);
+        rot.add(rotAxisNegZ);
+        rot.add(rotationButFlow);
         
         inv = new JPanel();
         inv.setLayout(new BoxLayout(inv, BoxLayout.Y_AXIS));
@@ -217,11 +252,11 @@ public class PrototypeApplet extends Applet {
         inversionText.setLineWrap(true);
         inversionText.setWrapStyleWord(true);
         inversionText.setOpaque(false);
-        inversionText.setPreferredSize(new Dimension(250,100));
+        //inversionText.setPreferredSize(new Dimension(250,100));
         JPanel invTextFlow = new JPanel(new FlowLayout());
         invTextFlow.add(inversionText);
         inv.add(inversionTitle);
-        inv.add(invTextFlow);
+        //inv.add(invTextFlow);
         inv.add(invButFlow);
         //inv.add(Box.createRigidArea(new Dimension(1, 500)));
         
@@ -401,6 +436,11 @@ public class PrototypeApplet extends Applet {
 				}		        
 			}
 			else if(e.getSource() == invertButton)
+			{
+				view1.evalString("select all; invertSelected POINT {0,0,0};");
+				inverted = !inverted;
+			}
+			else if(e.getSource() == rotButton)
 			{
 				view1.evalString("select all; invertSelected POINT {0,0,0};");
 				inverted = !inverted;
