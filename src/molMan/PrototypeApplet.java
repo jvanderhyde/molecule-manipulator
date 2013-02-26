@@ -38,20 +38,21 @@ import org.jmol.api.JmolSimpleViewer;
 public class PrototypeApplet extends Applet {
 
 	private static final long serialVersionUID = 1L;	
-	JmolSimpleViewer viewer0;
-	JmolSimpleViewer viewer1;
-    String structurePbd;
-    JmolPanel jmolPanel0;
-    JmolPanel jmolPanel1;
+	private JmolSimpleViewer viewer0;
+	private JmolSimpleViewer viewer1;
+	private String structurePbd;
+	private JmolPanel jmolPanel0;
+	private JmolPanel jmolPanel1;
     private final int W = 1400;
     private final int H = 800;
-    JScrollPane scrollPane;
-    String currentMolecule = "";
-    JTextField input = new JTextField(30);
-    JLabel currentMolLabel = new JLabel("");
-    JmolSimpleViewer view0;
-    JmolSimpleViewer view1;
-    JTextArea out;
+    private JScrollPane scrollPane;
+    private String currentMolecule = "";
+    private JTextField input = new JTextField(30);
+    private JLabel currentMolLabel = new JLabel("");
+    private JmolSimpleViewer view0;
+    private JmolSimpleViewer view1;
+    private JTextArea out;
+    private int rotAxisValue = -1; //0=x, 1=y, 2=z, 3=-x, 4=-y, 5=-z, -1=not selected
     
     ////////////STATE VARIABLES\\\\\\\\\\\\
     Boolean rotateOn = false;
@@ -442,8 +443,33 @@ public class PrototypeApplet extends Applet {
 			}
 			else if(e.getSource() == rotButton)
 			{
-				view1.evalString("select all; invertSelected POINT {0,0,0};");
-				inverted = !inverted;
+				if(rotAxisValue == -1) JOptionPane.showMessageDialog(null, "Please select an axis" +
+						" to rotate around.");
+				else
+				{
+					switch (rotAxisValue) {
+					case 0:
+						view1.evalString("rotate x 180;");
+						break;
+					case 1:
+						view1.evalString("rotate y 180;");
+						break;
+					case 2:
+						view1.evalString("rotate z 180;");
+						break;
+					case 3:
+						view1.evalString("rotate -x 180;");
+						break;
+					case 4:
+						view1.evalString("rotate -y 180;");
+						break;
+					case 5:
+						view1.evalString("rotate -z 180;");
+						break;
+					default:
+						break;
+					}
+				}			
 			}
 			else if(e.getSource() == reset0Button) view0.evalString("reset;");
 			else if(e.getSource() == reset1Button) 
@@ -455,6 +481,12 @@ public class PrototypeApplet extends Applet {
 					inverted = !inverted;
 				}
 			}
+			else if(e.getSource() == rotAxisX) rotAxisValue = 0;
+			else if(e.getSource() == rotAxisY) rotAxisValue = 1;
+			else if(e.getSource() == rotAxisZ) rotAxisValue = 2;
+			else if(e.getSource() == rotAxisNegX) rotAxisValue = 3;
+			else if(e.getSource() == rotAxisNegY) rotAxisValue = 4;
+			else if(e.getSource() == rotAxisNegZ) rotAxisValue = 5;
 		}		
 	}
 } 
