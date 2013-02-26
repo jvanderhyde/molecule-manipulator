@@ -204,10 +204,27 @@ public class PrototypeApplet extends Applet {
         rot = new JPanel();
         
         inv = new JPanel();
+        inv.setLayout(new BoxLayout(inv, BoxLayout.Y_AXIS));
         JPanel invButFlow = new JPanel(new FlowLayout()); 
         invertButton.addActionListener(handler);
         invButFlow.add(invertButton);
+        JLabel inversionTitle = new JLabel("INVERSION");
+        inversionTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+        JTextArea inversionText = new JTextArea("\nInversion moves all of the atoms of the molecule from" +
+        		" their original position (x,y,z), through the center of the molecule, to the" +
+        		" opposite position (-x,-y,-z).");
+        inversionText.setFont(new Font("Times New Roman", Font.PLAIN, 14));
+        inversionText.setLineWrap(true);
+        inversionText.setWrapStyleWord(true);
+        inversionText.setOpaque(false);
+        inversionText.setPreferredSize(new Dimension(250,100));
+        JPanel invTextFlow = new JPanel(new FlowLayout());
+        invTextFlow.add(inversionText);
+        inv.add(inversionTitle);
+        inv.add(invTextFlow);
         inv.add(invButFlow);
+        //inv.add(Box.createRigidArea(new Dimension(1, 500)));
+        
         
         rotInv = new JPanel();
         res = new JPanel();
