@@ -8,7 +8,7 @@
  * 	- Fill all the tab functions. 
  */
 
-
+ 
 package molMan;
 //Reference the required Java libraries
 import java.applet.Applet; 
