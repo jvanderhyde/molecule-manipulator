@@ -17,6 +17,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -25,22 +27,39 @@ import java.io.PipedOutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
-
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.Map;
 import javax.swing.*;
-
-import molMan.SimpleJmolExample.JmolPanel;
-
+//import molMan.SimpleJmolExample.JmolPanel;
+//import netscape.javascript.JSObject;
 import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
+import org.jmol.api.JmolCallbackListener;
+import org.jmol.api.JmolScriptInterface;
 import org.jmol.api.JmolSimpleViewer;
+import org.jmol.api.JmolStatusListener;
+import org.jmol.api.JmolSyncInterface;
+import org.jmol.api.JmolViewer;
+//import org.jmol.applet.AppletWrapper;
+//import org.jmol.applet.JmolAppletRegistry;
+import org.jmol.constant.EnumCallback;
+import org.jmol.i18n.GT;
+import org.jmol.util.Logger;
+import org.jmol.util.Parser;
+import org.jmol.util.TextFormat;
+import org.jmol.viewer.Viewer;
+//import org.openscience.jmol.app.jmolpanel.JmolPanel;
 
 //The applet code  
 public class PrototypeApplet extends Applet {
 
 	private static final long serialVersionUID = 1L;	
-	private JmolSimpleViewer viewer0;
-	private JmolSimpleViewer viewer1;
-	private String structurePbd;
+	//private JmolViewer viewer0;
+	//private JmolViewer viewer1;
+	//private String structurePbd;
 	private JmolPanel jmolPanel0;
 	private JmolPanel jmolPanel1;
     private final int W = 1400;
@@ -49,10 +68,18 @@ public class PrototypeApplet extends Applet {
     private String currentMolecule = "";
     private JTextField input = new JTextField(30);
     private JLabel currentMolLabel = new JLabel("");
-    private JmolSimpleViewer view0;
-    private JmolSimpleViewer view1;
+    private JmolViewer view0;
+    private JmolViewer view1;
     private JTextArea out;
     private int rotAxisValue = -1; //0=x, 1=y, 2=z, 3=-x, 4=-y, 5=-z, -1=not selected
+    private StatusListener jListen1;
+    private int rotationAmount;
+    
+    //////////////Stuff for MyJmolListener\\\\\\\\\\\\\\\\\
+    protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
+    protected String htmlName;
+    //protected AppletWrapper appletWrapper;
+    
     
     ////////////STATE VARIABLES\\\\\\\\\\\\
     Boolean rotateOn = false;
@@ -71,9 +98,14 @@ public class PrototypeApplet extends Applet {
     JRadioButton rotAxisNegX = new JRadioButton("-X");
     JRadioButton rotAxisNegY = new JRadioButton("-Y");
     JRadioButton rotAxisNegZ = new JRadioButton("-Z");
+    JButton previous = new JButton("Previous");
+    JButton next = new JButton("Next");
+    
 
 	public void init()
 	{	
+		htmlName = getParameter("name");
+		
 		//Setup the textarea for the system output to go to.
 		out = new JTextArea("Output", 7, 26);
 		scrollPane = new JScrollPane(out);
@@ -97,10 +129,8 @@ public class PrototypeApplet extends Applet {
 			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
 			System.setOut(output);			
 		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}        
 		
@@ -121,6 +151,11 @@ public class PrototypeApplet extends Applet {
 	{ 
         view0 = jmolPanel0.getViewer();
         view1 = jmolPanel1.getViewer();
+        
+        jListen1 = new StatusListener(jmolPanel1);
+        //view1.setJmolStatusListener(jListen1);
+        
+        //view0.setJmolStatusListener(jListen);
          
         //view0.openFile("5PTI.pdb");
         //view1.openFile("5PTI.pdb");
@@ -131,8 +166,8 @@ public class PrototypeApplet extends Applet {
         view0.evalString("load \":caffeine\";");
         view1.evalString("load \":caffeine\";");
         
-        this.viewer0 = view0; 
-        this.viewer1 = view1;
+        //this.viewer0 = view0; 
+        //this.viewer1 = view1;
     }
 	
 	public void setUpGui()
@@ -283,8 +318,8 @@ public class PrototypeApplet extends Applet {
         
         ///////////////////////////BOTTOM SECTION\\\\\\\\\\\\\\\\\\\\\\\\
         //create previous/next buttons
-        JButton previous = new JButton("Previous");
-        JButton next = new JButton("Next");
+        previous.addActionListener(handler);
+        next.addActionListener(handler);
         //Label
         JLabel molVar = new JLabel("  Molecule Variations  ");
         //text output area
@@ -337,19 +372,18 @@ public class PrototypeApplet extends Applet {
 	//This code found at: http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
 	static class JmolPanel extends JPanel 
 	{
-        /**
-         * 
-         */
+        
         private static final long serialVersionUID = -3661941083797644242L;
-        JmolSimpleViewer viewer;
+        //JmolSimpleViewer viewer;
+        JmolViewer viewer;
         JmolAdapter adapter;
         JmolPanel() 
         {
             adapter = new SmarterJmolAdapter();
-            viewer = JmolSimpleViewer.allocateSimpleViewer(this, adapter);
+            viewer = JmolViewer.allocateViewer(this, adapter);
         }
  
-        public JmolSimpleViewer getViewer() 
+        public JmolViewer getViewer() 
         {
             return viewer;
         }
@@ -415,11 +449,15 @@ public class PrototypeApplet extends Applet {
 		{
 			if (e.getSource() == selectButton || e.getSource() == input)
 			{
+				//Check the evalString method in JMol 
 				currentMolecule = input.getText();
 				System.out.println("Current Molecule Set to " +currentMolecule);
-				view0.evalString("load \":"+currentMolecule+"\";");
-		        view1.evalString("load \":"+currentMolecule+"\";");
-				currentMolLabel.setText("Current Molecule: "+currentMolecule);				
+				view0.evalString("try{load \":"+currentMolecule+"\"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
+		        view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");
+		        
+				//Still need to figure out how to get data from jmol to see if this should be changed or not...
+		        //  I think that the function of the 'prompt' command is significant because it is actually having jmol interact with java...
+		        currentMolLabel.setText("Current Molecule: "+currentMolecule);							
 			}	
 			else if(e.getSource()== rotateButton)
 			{
@@ -447,24 +485,26 @@ public class PrototypeApplet extends Applet {
 						" to rotate around.");
 				else
 				{
+					rotationAmount = 180;
+					
 					switch (rotAxisValue) {
 					case 0:
-						view1.evalString("rotate x 180;");
+						view1.evalString("move "+rotationAmount+" 0 0 0 0 0 0 0 5;");
 						break;
 					case 1:
-						view1.evalString("rotate y 180;");
+						view1.evalString("move 0 "+rotationAmount+" 0 0 0 0 0 0 5;");
 						break;
 					case 2:
-						view1.evalString("rotate z 180;");
+						view1.evalString("move 0 0 "+rotationAmount+" 0 0 0 0 0 5;");
 						break;
 					case 3:
-						view1.evalString("rotate -x 180;");
+						view1.evalString("move -"+rotationAmount+" 0 0 0 0 0 0 0 5;");
 						break;
 					case 4:
-						view1.evalString("rotate -y 180;");
+						view1.evalString("move 0 -"+rotationAmount+" 0 0 0 0 0 0 5;");
 						break;
 					case 5:
-						view1.evalString("rotate -z 180;");
+						view1.evalString("move 0 0 -"+rotationAmount+" 0 0 0 0 0 5;");
 						break;
 					default:
 						break;
@@ -487,6 +527,15 @@ public class PrototypeApplet extends Applet {
 			else if(e.getSource() == rotAxisNegX) rotAxisValue = 3;
 			else if(e.getSource() == rotAxisNegY) rotAxisValue = 4;
 			else if(e.getSource() == rotAxisNegZ) rotAxisValue = 5;
+			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
+			{
+				view1.evalString("print \"Stuff\"");
+				//view1.evalString("try{load \"garbage\"}catch(e){prompt \"Molecule not found.\"}");
+				//view1.evalString("show orientation moveto;");
+				//view1.evalString("axes on; axes 4;");
+				//draw POLYGON 4 {0 0 0} {1 1 1} {1 2 1} {0 5 0} 2 [0 1 2 6] [0 3 2 6] mesh nofill
+			}
 		}		
 	}
+	
 } 
