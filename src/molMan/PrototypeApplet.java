@@ -30,8 +30,13 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Properties;
+
+
+
 import javax.swing.*;
 //import molMan.SimpleJmolExample.JmolPanel;
 //import netscape.javascript.JSObject;
@@ -123,7 +128,7 @@ public class PrototypeApplet extends Applet {
 		
 		out.setEditable(false);
 		
-		   
+		/*   
 		try //Redirect System.out to run to our output box.
 		{
 			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
@@ -132,7 +137,8 @@ public class PrototypeApplet extends Applet {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}        
+		} 
+		*/       
 		
 		//Calculate the appropriate size for jmolPanel		
 		int jmolWidth = this.getWidth()/3;
@@ -299,7 +305,7 @@ public class PrototypeApplet extends Applet {
         
         rotInv = new JPanel();
         res = new JPanel();
-        tabs.setTabPlacement(JTabbedPane.LEFT);
+        tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab("Rotation", null, rot, "Rotate the molecule around an axis");
         tabs.addTab("Inversion", null, inv, "Invert the molecule through a plane");
         tabs.addTab("Rot & Inv", null, rotInv, "");
@@ -457,7 +463,16 @@ public class PrototypeApplet extends Applet {
 		        
 				//Still need to figure out how to get data from jmol to see if this should be changed or not...
 		        //  I think that the function of the 'prompt' command is significant because it is actually having jmol interact with java...
-		        currentMolLabel.setText("Current Molecule: "+currentMolecule);							
+		        while(!view1.getBooleanProperty("__appletReady"))
+		        {
+		        	System.out.println("Executing...");
+		        }//Wait for molecule to load...
+		        String urlName = view1.getModelSetPathName();
+		        urlName = urlName.substring(55, urlName.length()-19); 
+		        //System.out.println(urlName);
+		        currentMolecule = urlName;
+		        currentMolLabel.setText("Current Molecule: "+currentMolecule);
+		        //http://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/SDF?record_type=3d
 			}	
 			else if(e.getSource()== rotateButton)
 			{
@@ -529,7 +544,22 @@ public class PrototypeApplet extends Applet {
 			else if(e.getSource() == rotAxisNegZ) rotAxisValue = 5;
 			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
 			{
-				view1.evalString("print \"Stuff\"");
+				///////////Possible Useful Commands\\\\\\\\\\\\\\\
+				//view1.getModelSetPathName();  \\Gets the URL for the current molecule at pubchem...
+				//view1.isScriptExecuting()  //returns true if no script is executing...
+				//view1.getBooleanProperty("__appletReady");
+				//view1..getBooleanProperty("ShowAxes");???
+				
+				
+				if(view1.getBooleanProperty("ShowAxes")) System.out.println("rotating");
+				else System.out.println("not rotating");
+				
+				//view1.setRotation(javax.vecmath.Matrix3f matrixRotation) //Could we possibly use matricies to move the atoms?
+				//view1.getAtomPoint3f(int);
+				//view1.getBooleanProperty(String)
+				//view1.getData(String atomExpression, String type)
+				//view1.setBooleanProperty(java.lang.String propertyName, boolean value)
+				//view1.evalString("print \"Stuff\"");
 				//view1.evalString("try{load \"garbage\"}catch(e){prompt \"Molecule not found.\"}");
 				//view1.evalString("show orientation moveto;");
 				//view1.evalString("axes on; axes 4;");
