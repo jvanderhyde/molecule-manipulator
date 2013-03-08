@@ -7,7 +7,7 @@
  * 	- Add Transformation animations
  */
 
-
+ 
 package molMan;
 //Reference the required Java libraries
 import java.applet.Applet; 
@@ -112,8 +112,12 @@ public class PrototypeApplet extends Applet {
 		htmlName = getParameter("name");
 		
 		//Setup the textarea for the system output to go to.
-		out = new JTextArea("Output", 7, 26);
+                
+		out = new JTextArea("Output");
 		scrollPane = new JScrollPane(out);
+                int textAreaW = (this.W/2)-scrollPane.getX();
+                int textAreaH = (this.H-scrollPane.getY())-200;
+                scrollPane.setSize(textAreaH, textAreaW);
 		//Make the ScrollPane autoScroll when something is added.
 		//Found at : http://www.coderanch.com/t/329964/GUI/java/JScrollpane-Force-autoscroll-bottom
 		scrollPane.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener()
@@ -122,7 +126,7 @@ public class PrototypeApplet extends Applet {
 			{
 				//I think that the 1000 here means that it will be able to adjust the scroll
 				//  if the output is not more then 1000 lines input at a time...
-				out.select(out.getHeight()+1000,0);
+				out.select(out.getHeight()+1000,0);                                
 			}
 		});
 		
@@ -359,7 +363,9 @@ public class PrototypeApplet extends Applet {
         southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
         
         JPanel scrollFlow = new JPanel();
-        scrollFlow.setLayout(new FlowLayout());
+        scrollFlow.setLayout(new BoxLayout(scrollFlow, BoxLayout.Y_AXIS));
+        scrollFlow.add(Box.createRigidArea(new Dimension(scrollFlow.getWidth(),200)));
+        scrollFlow.setBounds(scrollFlow.getX(), scrollFlow.getY(), this.W/3-scrollFlow.getX(), this.H-scrollFlow.getY());
         scrollFlow.add(scrollPane);
         
         
