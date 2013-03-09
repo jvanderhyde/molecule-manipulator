@@ -78,9 +78,6 @@ public class PrototypeApplet extends Applet {
                 
 		out = new JTextArea("Output");
 		scrollPane = new JScrollPane(out);
-                int textAreaW = (this.W/2)-scrollPane.getX();
-                int textAreaH = (this.H-scrollPane.getY())-200;
-                scrollPane.setSize(textAreaH, textAreaW);
 		//Make the ScrollPane autoScroll when something is added.
 		//Found at : http://www.coderanch.com/t/329964/GUI/java/JScrollpane-Force-autoscroll-bottom
 		scrollPane.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener()
