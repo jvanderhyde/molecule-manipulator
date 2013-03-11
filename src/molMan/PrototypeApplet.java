@@ -556,12 +556,30 @@ public class PrototypeApplet extends Applet {
 					inverted = !inverted;
 				}
 			}
-			else if((e.getSource() == rotAxisX)||(e.getSource() == rotAxisX1)){rotAxisValue = 0;}
-			else if((e.getSource() == rotAxisY)||(e.getSource() == rotAxisY1)){rotAxisValue = 1;}
-			else if((e.getSource() == rotAxisZ)||(e.getSource() == rotAxisZ1)){rotAxisValue = 2;}
-			else if((e.getSource() == rotAxisNegX)||(e.getSource() == rotAxisNegX1)){rotAxisValue = 3;}
-			else if((e.getSource() == rotAxisNegY)||(e.getSource() == rotAxisNegY1)){rotAxisValue = 4;}
-			else if((e.getSource() == rotAxisNegZ)||(e.getSource() == rotAxisNegZ1)){rotAxisValue = 5;}
+			else if((e.getSource() == rotAxisX)||(e.getSource() == rotAxisX1))
+                        {
+                            rotAxisValue = 0;
+                        }
+			else if((e.getSource() == rotAxisY)||(e.getSource() == rotAxisY1))
+                        {
+                            rotAxisValue = 1;
+                        }
+			else if((e.getSource() == rotAxisZ)||(e.getSource() == rotAxisZ1))
+                        {
+                            rotAxisValue = 2;
+                        }
+			else if((e.getSource() == rotAxisNegX)||(e.getSource() == rotAxisNegX1))
+                        {
+                            rotAxisValue = 3;
+                        }
+			else if((e.getSource() == rotAxisNegY)||(e.getSource() == rotAxisNegY1))
+                        {
+                            rotAxisValue = 4;
+                        }
+			else if((e.getSource() == rotAxisNegZ)||(e.getSource() == rotAxisNegZ1))
+                        {
+                            rotAxisValue = 5;
+                        }
 		}		
 	}
 } 
