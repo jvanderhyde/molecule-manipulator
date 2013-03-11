@@ -17,8 +17,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -27,23 +25,13 @@ import java.io.PipedOutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Map;
-import java.util.Properties;
-
-
 
 import javax.swing.*;
-//import molMan.SimpleJmolExample.JmolPanel;
-//import netscape.javascript.JSObject;
+
+import molMan.SimpleJmolExample.JmolPanel;
+
 import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
-import org.jmol.api.JmolCallbackListener;
-import org.jmol.api.JmolScriptInterface;
 import org.jmol.api.JmolSimpleViewer;
 import org.jmol.api.JmolStatusListener;
 import org.jmol.api.JmolSyncInterface;
@@ -97,6 +85,7 @@ public class PrototypeApplet extends Applet {
     JButton reset0Button = new JButton("Reset");
     JButton reset1Button = new JButton("Reset");
     JButton rotButton = new JButton("Rotate");
+    JButton rotInvButton = new JButton("Rotate & Invert");
     JRadioButton rotAxisX = new JRadioButton("X");
     JRadioButton rotAxisY = new JRadioButton("Y");
     JRadioButton rotAxisZ = new JRadioButton("Z");
@@ -115,9 +104,6 @@ public class PrototypeApplet extends Applet {
                 
 		out = new JTextArea("Output");
 		scrollPane = new JScrollPane(out);
-                int textAreaW = (this.W/2)-scrollPane.getX();
-                int textAreaH = (this.H-scrollPane.getY())-200;
-                scrollPane.setSize(textAreaH, textAreaW);
 		//Make the ScrollPane autoScroll when something is added.
 		//Found at : http://www.coderanch.com/t/329964/GUI/java/JScrollpane-Force-autoscroll-bottom
 		scrollPane.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener()
@@ -148,13 +134,13 @@ public class PrototypeApplet extends Applet {
 		int jmolWidth = this.getWidth()/3;
 				
 		jmolPanel0 = new JmolPanel();
-        jmolPanel1 = new JmolPanel();
+                jmolPanel1 = new JmolPanel();
         
-        jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
-        jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
+                jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
+                jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
         
-        setUpGui();
-        loadStructure();
+                setUpGui();
+                loadStructure();
 	}
 	
 	public void loadStructure() 
@@ -308,6 +294,34 @@ public class PrototypeApplet extends Applet {
         
         
         rotInv = new JPanel();
+        rotInv.setLayout(new BoxLayout(rotInv, BoxLayout.Y_AXIS));
+        JPanel rotInvButFlow = new JPanel(new FlowLayout()); 
+        rotInvButton.addActionListener(handler);
+        rotInvButFlow.add(rotInvButton);
+        JLabel rotInvTitle = new JLabel("ROTATION & INVERSION");
+        rotInvTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+        ButtonGroup axis1 = new ButtonGroup();
+        axis1.add(rotAxisX1);
+        axis1.add(rotAxisY1);
+        axis1.add(rotAxisZ1);
+        axis1.add(rotAxisNegX1);
+        axis1.add(rotAxisNegY1);
+        axis1.add(rotAxisNegZ1);
+        rotAxisX1.addActionListener(handler);
+        rotAxisY1.addActionListener(handler);
+        rotAxisZ1.addActionListener(handler);
+        rotAxisNegX1.addActionListener(handler);
+        rotAxisNegY1.addActionListener(handler);
+        rotAxisNegZ1.addActionListener(handler);        
+        rotInv.add(rotInvTitle);
+        rotInv.add(rotAxisX1);
+        rotInv.add(rotAxisY1);
+        rotInv.add(rotAxisZ1);
+        rotInv.add(rotAxisNegX1);
+        rotInv.add(rotAxisNegY1);
+        rotInv.add(rotAxisNegZ1);
+        rotInv.add(rotInvButFlow);
+        
         res = new JPanel();
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab("Rotation", null, rot, "Rotate the molecule around an axis");
@@ -511,27 +525,64 @@ public class PrototypeApplet extends Applet {
 					switch (rotAxisValue) {
 					case 0:
 						view1.evalString("move "+rotationAmount+" 0 0 0 0 0 0 0 5;");
+                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
+                                                inverted = !inverted;
 						break;
 					case 1:
 						view1.evalString("move 0 "+rotationAmount+" 0 0 0 0 0 0 5;");
+                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
+                                                inverted = !inverted;
 						break;
 					case 2:
 						view1.evalString("move 0 0 "+rotationAmount+" 0 0 0 0 0 5;");
+                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
+                                                inverted = !inverted;
 						break;
 					case 3:
 						view1.evalString("move -"+rotationAmount+" 0 0 0 0 0 0 0 5;");
+                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
+                                                inverted = !inverted;
 						break;
 					case 4:
 						view1.evalString("move 0 -"+rotationAmount+" 0 0 0 0 0 0 5;");
+                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
+                                                inverted = !inverted;
 						break;
 					case 5:
 						view1.evalString("move 0 0 -"+rotationAmount+" 0 0 0 0 0 5;");
+                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
+                                                inverted = !inverted;
 						break;
 					default:
 						break;
 					}
 				}			
 			}
+                        else if(e.getSource() == rotInvButton)
+                        {
+                            switch (rotAxisValue) {
+					case 0:
+						view1.evalString("rotate x 180;");
+						break;
+					case 1:
+						view1.evalString("rotate y 180;");
+						break;
+					case 2:
+						view1.evalString("rotate z 180;");
+						break;
+					case 3:
+						view1.evalString("rotate -x 180;");
+						break;
+					case 4:
+						view1.evalString("rotate -y 180;");
+						break;
+					case 5:
+						view1.evalString("rotate -z 180;");
+						break;
+					default:
+						break;
+					}
+                        }
 			else if(e.getSource() == reset0Button) view0.evalString("reset;");
 			else if(e.getSource() == reset1Button) 
 			{
@@ -542,12 +593,30 @@ public class PrototypeApplet extends Applet {
 					inverted = !inverted;
 				}
 			}
-			else if(e.getSource() == rotAxisX) rotAxisValue = 0;
-			else if(e.getSource() == rotAxisY) rotAxisValue = 1;
-			else if(e.getSource() == rotAxisZ) rotAxisValue = 2;
-			else if(e.getSource() == rotAxisNegX) rotAxisValue = 3;
-			else if(e.getSource() == rotAxisNegY) rotAxisValue = 4;
-			else if(e.getSource() == rotAxisNegZ) rotAxisValue = 5;
+			else if((e.getSource() == rotAxisX)||(e.getSource() == rotAxisX1))
+                        {
+                            rotAxisValue = 0;
+                        }
+			else if((e.getSource() == rotAxisY)||(e.getSource() == rotAxisY1))
+                        {
+                            rotAxisValue = 1;
+                        }
+			else if((e.getSource() == rotAxisZ)||(e.getSource() == rotAxisZ1))
+                        {
+                            rotAxisValue = 2;
+                        }
+			else if((e.getSource() == rotAxisNegX)||(e.getSource() == rotAxisNegX1))
+                        {
+                            rotAxisValue = 3;
+                        }
+			else if((e.getSource() == rotAxisNegY)||(e.getSource() == rotAxisNegY1))
+                        {
+                            rotAxisValue = 4;
+                        }
+			else if((e.getSource() == rotAxisNegZ)||(e.getSource() == rotAxisNegZ1))
+                        {
+                            rotAxisValue = 5;
+                        }
 			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
 			{
 				///////////Possible Useful Commands\\\\\\\\\\\\\\\
