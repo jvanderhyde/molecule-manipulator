@@ -557,8 +557,7 @@ public class PrototypeApplet extends Applet {
 				//view1..getBooleanProperty("ShowAxes");???
 				
 				
-				if(view1.getBooleanProperty("ShowAxes")) System.out.println("rotating");
-				else System.out.println("not rotating");
+				//view1.evalString("jmolSetCallback\"jmolCallbackGetter\" \"resizeCallback\"");
 				
 				//view1.setRotation(javax.vecmath.Matrix3f matrixRotation) //Could we possibly use matricies to move the atoms?
 				//view1.getAtomPoint3f(int);
@@ -572,6 +571,14 @@ public class PrototypeApplet extends Applet {
 				//draw POLYGON 4 {0 0 0} {1 1 1} {1 2 1} {0 5 0} 2 [0 1 2 6] [0 3 2 6] mesh nofill
 			}
 		}		
+	}
+	public void jmolCallbackGetter(String[] args)
+	{
+		System.out.println("!!!!!!!!!!jmolCallbackGetter Called!!!!!!!!!!!!!");
+		for(int i=0; i<args.length; i++)
+		{
+			System.out.println(args[0]);
+		}
 	}
 	
 } 
