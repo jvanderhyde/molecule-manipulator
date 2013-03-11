@@ -67,7 +67,7 @@ public class PrototypeApplet extends Applet {
     private JmolViewer view1;
     private JTextArea out;
     private int rotAxisValue = -1; //0=x, 1=y, 2=z, 3=-x, 4=-y, 5=-z, -1=not selected
-    private StatusListener jListen1;
+    //private StatusListener jListen1;
     private int rotationAmount;
     
     //////////////Stuff for MyJmolListener\\\\\\\\\\\\\\\\\
@@ -157,7 +157,7 @@ public class PrototypeApplet extends Applet {
         view0 = jmolPanel0.getViewer();
         view1 = jmolPanel1.getViewer();
         
-        jListen1 = new StatusListener(jmolPanel1);
+        //jListen1 = new StatusListener(jmolPanel1);
         //view1.setJmolStatusListener(jListen1);
         
         //view0.setJmolStatusListener(jListen);
