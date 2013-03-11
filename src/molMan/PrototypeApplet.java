@@ -25,6 +25,8 @@ import java.io.PipedOutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.util.Hashtable;
+import java.util.Map;
 
 import javax.swing.*;
 
@@ -92,6 +94,13 @@ public class PrototypeApplet extends Applet {
     JRadioButton rotAxisNegX = new JRadioButton("-X");
     JRadioButton rotAxisNegY = new JRadioButton("-Y");
     JRadioButton rotAxisNegZ = new JRadioButton("-Z");
+
+    JRadioButton rotAxisX1 = new JRadioButton("X");
+    JRadioButton rotAxisY1 = new JRadioButton("Y");
+    JRadioButton rotAxisZ1 = new JRadioButton("Z");
+    JRadioButton rotAxisNegX1 = new JRadioButton("-X");
+    JRadioButton rotAxisNegY1 = new JRadioButton("-Y");
+    JRadioButton rotAxisNegZ1 = new JRadioButton("-Z");
     JButton previous = new JButton("Previous");
     JButton next = new JButton("Next");
     
