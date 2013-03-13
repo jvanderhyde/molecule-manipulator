@@ -58,6 +58,7 @@ public class PrototypeApplet extends Applet {
     private JmolViewer view1;
     private JTextArea out;
     private int rotAxisValue = -1; //0=x, 1=y, 2=z, 3=-x, 4=-y, 5=-z, -1=not selected
+
     private int rotationAmount;
      
     ////////////STATE VARIABLES\\\\\\\\\\\\
@@ -146,6 +147,19 @@ public class PrototypeApplet extends Applet {
         view0 = jmolPanel0.getViewer();
         view0.setJmolStatusListener(jListen0);
         view1 = jmolPanel1.getViewer();
+        
+        //jListen1 = new StatusListener(jmolPanel1);
+        //view1.setJmolStatusListener(jListen1);
+        
+        //view0.setJmolStatusListener(jListen);
+         
+        //view0.openFile("5PTI.pdb");
+        //view1.openFile("5PTI.pdb");
+        
+        //viewer.evalString("select *; spacefill off; wireframe off; backbone 0.4;  ");
+        //viewer.evalString("color chain;  ");
+        
+
         view1.setJmolStatusListener(jListen1);
                       
         loadingMol0 = true;
