@@ -616,7 +616,7 @@ public class PrototypeApplet extends Applet {
             }
             else if(e.getSource() == refButton)
             {
-                view1.evalString("select all; reflectSelected PLANE "+refPlane+";");		
+                view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");		
             }
 			else if(e.getSource() == reset0Button)
                         {
