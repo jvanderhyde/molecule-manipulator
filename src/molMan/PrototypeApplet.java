@@ -73,6 +73,7 @@ public class PrototypeApplet extends Applet {
     private JButton reset1Button = new JButton("Reset");
     private JButton rotButton = new JButton("Rotate");
     private JButton rotInvButton = new JButton("Rotate & Invert");
+    private JButton refButton = new JButton("Reflect");
     private JRadioButton rotAxisX = new JRadioButton("X");
     private JRadioButton rotAxisY = new JRadioButton("Y");
     private JRadioButton rotAxisZ = new JRadioButton("Z");
@@ -85,6 +86,9 @@ public class PrototypeApplet extends Applet {
     private JRadioButton rotAxisNegX1 = new JRadioButton("-X");
     private JRadioButton rotAxisNegY1 = new JRadioButton("-Y");
     private JRadioButton rotAxisNegZ1 = new JRadioButton("-Z");
+    private JRadioButton refX = new JRadioButton("X");
+    private JRadioButton refY = new JRadioButton("Y");
+    private JRadioButton refZ = new JRadioButton("Z");
     private JButton previous = new JButton("Previous");
     private JButton next = new JButton("Next");
     
@@ -95,6 +99,7 @@ public class PrototypeApplet extends Applet {
     private MyJmolListener jListen1 = new MyJmolListener();
     private boolean loadingMol0 = false;
     private boolean loadingMol1 = false;
+    String refPlane;
     
 	public void init()
 	{	
@@ -241,7 +246,7 @@ public class PrototypeApplet extends Applet {
         ///////////////////////////MIDDLE SECTION\\\\\\\\\\\\\\\\\\\\\\\\
         //creates tabbed display
         JTabbedPane tabs = new JTabbedPane();
-        JPanel rot, inv, rotInv, res;
+        JPanel rot, inv, rotInv, ref;
         
         rot = new JPanel();
         rot.setLayout(new BoxLayout(rot, BoxLayout.Y_AXIS));
@@ -324,12 +329,31 @@ public class PrototypeApplet extends Applet {
         rotInv.add(rotAxisNegZ1);
         rotInv.add(rotInvButFlow);
         
-        res = new JPanel();
+        ref = new JPanel();
+        ref.setLayout(new BoxLayout(ref, BoxLayout.Y_AXIS));
+        JPanel reflectionButFlow = new JPanel(new FlowLayout()); 
+        refButton.addActionListener(handler);
+        reflectionButFlow.add(refButton);
+        JLabel reflectionTitle = new JLabel("REFLECTION");
+        reflectionTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+        ButtonGroup axis2 = new ButtonGroup();
+        axis2.add(refX);
+        axis2.add(refY);
+        axis2.add(refZ);
+        refX.addActionListener(handler);
+        refY.addActionListener(handler);
+        refZ.addActionListener(handler);  
+        ref.add(reflectionTitle);
+        ref.add(refX);
+        ref.add(refY);
+        ref.add(refZ);
+        ref.add(reflectionButFlow);
+        
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab("Rotation", null, rot, "Rotate the molecule around an axis");
         tabs.addTab("Inversion", null, inv, "Invert the molecule through a plane");
         tabs.addTab("Rot & Inv", null, rotInv, "");
-        tabs.addTab("Reflection", null, res, "Reflect the molecule through a plane");
+        tabs.addTab("Reflection", null, ref, "Reflect the molecule through a plane");
         
         //adds tabbed display to the middle of the layout
         JPanel molViewer0 = new JPanel();
@@ -590,7 +614,14 @@ public class PrototypeApplet extends Applet {
 						break;
 				}
             }
-			else if(e.getSource() == reset0Button) view0.evalString("reset;");
+            else if(e.getSource() == refButton)
+            {
+                view1.evalString("select all; reflectSelected PLANE "+refPlane+";");		
+            }
+			else if(e.getSource() == reset0Button)
+                        {
+                            view0.evalString("reset;");
+                        }
 			else if(e.getSource() == reset1Button) 
 			{
 				view1.evalString("reset;");
@@ -598,7 +629,7 @@ public class PrototypeApplet extends Applet {
 				{
 					view1.evalString("select all; invertSelected POINT {0,0,0};");
 					inverted = !inverted;
-				}
+                                }
 				
 				//remove any axis that is being drawn.
 				view1.evalString("draw axis1 DELETE");
@@ -651,6 +682,18 @@ public class PrototypeApplet extends Applet {
                 //First delete any drawn axis, then draw the right one...
 	            view1.evalString("draw axis1 DELETE");
                 view1.evalString("draw axis1 \"-z axis\" {0,0,-4} {0,0,4}");
+            }
+            else if(e.getSource() == refX)
+            {
+                refPlane = "yz";
+            }
+            else if(e.getSource() == refY)
+            {
+                refPlane = "xz";
+            }
+            else if(e.getSource() == refZ)
+            {
+                refPlane = "xy";
             }
 			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
 			{
