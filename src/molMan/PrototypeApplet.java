@@ -111,7 +111,7 @@ public class PrototypeApplet extends Applet {
 		
 		//Setup the textarea for the system output to go to.
                 
-		out = new JTextArea("Output");
+		out = new JTextArea(7,30);
 		scrollPane = new JScrollPane(out);
 		//Make the ScrollPane autoScroll when something is added.
 		//Found at : http://www.coderanch.com/t/329964/GUI/java/JScrollpane-Force-autoscroll-bottom
@@ -137,7 +137,7 @@ public class PrototypeApplet extends Applet {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
-		*/       
+		*/     
 		
 		//Calculate the appropriate size for jmolPanel		
 		int jmolWidth = this.getWidth()/3;
@@ -386,9 +386,10 @@ public class PrototypeApplet extends Applet {
         southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
         
         JPanel scrollFlow = new JPanel();
-        scrollFlow.setLayout(new BoxLayout(scrollFlow, BoxLayout.Y_AXIS));
-        scrollFlow.add(Box.createRigidArea(new Dimension(scrollFlow.getWidth(),200)));
-        scrollFlow.setBounds(scrollFlow.getX(), scrollFlow.getY(), this.W/3-scrollFlow.getX(), this.H-scrollFlow.getY());
+        scrollFlow.setLayout(new FlowLayout());
+        //scrollFlow.setLayout(new BoxLayout(scrollFlow, BoxLayout.Y_AXIS));
+        //scrollFlow.add(Box.createRigidArea(new Dimension(scrollFlow.getWidth(),200)));
+        //scrollFlow.setBounds(scrollFlow.getX(), scrollFlow.getY(), this.W/3-scrollFlow.getX(), this.H-scrollFlow.getY());
         scrollFlow.add(scrollPane);
         
         
@@ -523,7 +524,7 @@ public class PrototypeApplet extends Applet {
 				view1.evalString("select all; invertSelected POINT {0,0,0};");
 				inverted = !inverted;
 			}
-			else if(e.getSource() == rotButton)
+			else if(e.getSource() == rotInvButton)
 			{
 				if(rotAxisValue == -1) JOptionPane.showMessageDialog(null, "Please select an axis" +
 						" to rotate around.");
@@ -567,29 +568,31 @@ public class PrototypeApplet extends Applet {
 					}
 				}			
 			}
-                        else if(e.getSource() == rotInvButton)
-                        {
-                            switch (rotAxisValue) {
-					case 0:
-						view1.evalString("rotate x 180;");
-						break;
-					case 1:
-						view1.evalString("rotate y 180;");
-						break;
-					case 2:
-						view1.evalString("rotate z 180;");
-						break;
-					case 3:
-						view1.evalString("rotate -x 180;");
-						break;
-					case 4:
-						view1.evalString("rotate -y 180;");
-						break;
-					case 5:
-						view1.evalString("rotate -z 180;");
-						break;
-					default:
-						break;
+            else if(e.getSource() == rotButton)
+            {
+            	rotationAmount = 180;
+				
+				switch (rotAxisValue) {
+				case 0:
+					view1.evalString("move "+rotationAmount+" 0 0 0 0 0 0 0 5;");
+					break;
+				case 1:
+					view1.evalString("move 0 "+rotationAmount+" 0 0 0 0 0 0 5;");
+					break;
+				case 2:
+					view1.evalString("move 0 0 "+rotationAmount+" 0 0 0 0 0 5;");
+					break;
+				case 3:
+					view1.evalString("move -"+rotationAmount+" 0 0 0 0 0 0 0 5;");
+					break;
+				case 4:
+					view1.evalString("move 0 -"+rotationAmount+" 0 0 0 0 0 0 5;");
+					break;
+				case 5:
+					view1.evalString("move 0 0 -"+rotationAmount+" 0 0 0 0 0 5;");
+					break;
+				default:
+					break;
 					}
                         }
 			else if(e.getSource() == reset0Button) view0.evalString("reset;");
