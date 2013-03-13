@@ -27,34 +27,25 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.util.Hashtable;
 import java.util.Map;
-
 import javax.swing.*;
-
 import molMan.SimpleJmolExample.JmolPanel;
-
 import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
 import org.jmol.api.JmolSimpleViewer;
 import org.jmol.api.JmolStatusListener;
 import org.jmol.api.JmolSyncInterface;
 import org.jmol.api.JmolViewer;
-//import org.jmol.applet.AppletWrapper;
-//import org.jmol.applet.JmolAppletRegistry;
 import org.jmol.constant.EnumCallback;
 import org.jmol.i18n.GT;
 import org.jmol.util.Logger;
 import org.jmol.util.Parser;
 import org.jmol.util.TextFormat;
 import org.jmol.viewer.Viewer;
-//import org.openscience.jmol.app.jmolpanel.JmolPanel;
 
 //The applet code  
 public class PrototypeApplet extends Applet {
 
 	private static final long serialVersionUID = 1L;	
-	//private JmolViewer viewer0;
-	//private JmolViewer viewer1;
-	//private String structurePbd;
 	private JmolPanel jmolPanel0;
 	private JmolPanel jmolPanel1;
     private final int W = 1400;
@@ -67,48 +58,45 @@ public class PrototypeApplet extends Applet {
     private JmolViewer view1;
     private JTextArea out;
     private int rotAxisValue = -1; //0=x, 1=y, 2=z, 3=-x, 4=-y, 5=-z, -1=not selected
-    private StatusListener jListen1;
     private int rotationAmount;
-    
-    //////////////Stuff for MyJmolListener\\\\\\\\\\\\\\\\\
-    protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
-    protected String htmlName;
-    //protected AppletWrapper appletWrapper;
-    
-    
+     
     ////////////STATE VARIABLES\\\\\\\\\\\\
-    Boolean rotateOn = false;
-    Boolean inverted = false;
+    private Boolean rotateOn = false;
+    private Boolean inverted = false;
     
     ////////////BUTTONS\\\\\\\\\\\\
-    JButton selectButton = new JButton("Select");
-    JButton rotateButton = new JButton("Rotate On/Off");
-    JButton invertButton = new JButton("Invert");
-    JButton reset0Button = new JButton("Reset");
-    JButton reset1Button = new JButton("Reset");
-    JButton rotButton = new JButton("Rotate");
-    JButton rotInvButton = new JButton("Rotate & Invert");
-    JRadioButton rotAxisX = new JRadioButton("X");
-    JRadioButton rotAxisY = new JRadioButton("Y");
-    JRadioButton rotAxisZ = new JRadioButton("Z");
-    JRadioButton rotAxisNegX = new JRadioButton("-X");
-    JRadioButton rotAxisNegY = new JRadioButton("-Y");
-    JRadioButton rotAxisNegZ = new JRadioButton("-Z");
-
-    JRadioButton rotAxisX1 = new JRadioButton("X");
-    JRadioButton rotAxisY1 = new JRadioButton("Y");
-    JRadioButton rotAxisZ1 = new JRadioButton("Z");
-    JRadioButton rotAxisNegX1 = new JRadioButton("-X");
-    JRadioButton rotAxisNegY1 = new JRadioButton("-Y");
-    JRadioButton rotAxisNegZ1 = new JRadioButton("-Z");
-    JButton previous = new JButton("Previous");
-    JButton next = new JButton("Next");
+    private JButton selectButton = new JButton("Select");
+    private JButton rotateButton = new JButton("Rotate On/Off");
+    private JButton invertButton = new JButton("Invert");
+    private JButton reset0Button = new JButton("Reset");
+    private JButton reset1Button = new JButton("Reset");
+    private JButton rotButton = new JButton("Rotate");
+    private JButton rotInvButton = new JButton("Rotate & Invert");
+    private JRadioButton rotAxisX = new JRadioButton("X");
+    private JRadioButton rotAxisY = new JRadioButton("Y");
+    private JRadioButton rotAxisZ = new JRadioButton("Z");
+    private JRadioButton rotAxisNegX = new JRadioButton("-X");
+    private JRadioButton rotAxisNegY = new JRadioButton("-Y");
+    private JRadioButton rotAxisNegZ = new JRadioButton("-Z");
+    private JRadioButton rotAxisX1 = new JRadioButton("X");
+    private JRadioButton rotAxisY1 = new JRadioButton("Y");
+    private JRadioButton rotAxisZ1 = new JRadioButton("Z");
+    private JRadioButton rotAxisNegX1 = new JRadioButton("-X");
+    private JRadioButton rotAxisNegY1 = new JRadioButton("-Y");
+    private JRadioButton rotAxisNegZ1 = new JRadioButton("-Z");
+    private JButton previous = new JButton("Previous");
+    private JButton next = new JButton("Next");
     
 
+    protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
+    private String callbackString = new String("Nothing");
+    private MyJmolListener jListen0 = new MyJmolListener();
+    private MyJmolListener jListen1 = new MyJmolListener();
+    private boolean loadingMol0 = false;
+    private boolean loadingMol1 = false;
+    
 	public void init()
 	{	
-		htmlName = getParameter("name");
-		
 		//Setup the textarea for the system output to go to.
                 
 		out = new JTextArea(7,30);
@@ -127,7 +115,8 @@ public class PrototypeApplet extends Applet {
 		
 		out.setEditable(false);
 		
-		/*   
+		/*   I have killed the output for now because I was halving problems with prints from
+		 * the applet not showing up...  Not sure if perhaps Jmol is blocking them...
 		try //Redirect System.out to run to our output box.
 		{
 			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
@@ -143,36 +132,26 @@ public class PrototypeApplet extends Applet {
 		int jmolWidth = this.getWidth()/3;
 				
 		jmolPanel0 = new JmolPanel();
-                jmolPanel1 = new JmolPanel();
-        
-                jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
-                jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
-        
-                setUpGui();
-                loadStructure();
+        jmolPanel1 = new JmolPanel();
+
+        jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
+        jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
+
+        setUpGui();
+        loadStructure();
 	}
 	
 	public void loadStructure() 
 	{ 
         view0 = jmolPanel0.getViewer();
+        view0.setJmolStatusListener(jListen0);
         view1 = jmolPanel1.getViewer();
-        
-        jListen1 = new StatusListener(jmolPanel1);
-        //view1.setJmolStatusListener(jListen1);
-        
-        //view0.setJmolStatusListener(jListen);
-         
-        //view0.openFile("5PTI.pdb");
-        //view1.openFile("5PTI.pdb");
-        
-        //viewer.evalString("select *; spacefill off; wireframe off; backbone 0.4;  ");
-        //viewer.evalString("color chain;  ");
-        
+        view1.setJmolStatusListener(jListen1);
+                      
+        loadingMol0 = true;
         view0.evalString("load \":caffeine\";");
+        loadingMol1 = true;
         view1.evalString("load \":caffeine\";");
-        
-        //this.viewer0 = view0; 
-        //this.viewer1 = view1;
     }
 	
 	public void setUpGui()
@@ -480,7 +459,6 @@ public class PrototypeApplet extends Applet {
 	
 	private class ButtonListener implements ActionListener 
 	{
-
 		public void actionPerformed(ActionEvent e) 
 		{
 			if (e.getSource() == selectButton || e.getSource() == input)
@@ -526,75 +504,78 @@ public class PrototypeApplet extends Applet {
 			}
 			else if(e.getSource() == rotInvButton)
 			{
-				if(rotAxisValue == -1) JOptionPane.showMessageDialog(null, "Please select an axis" +
-						" to rotate around.");
-				else
+				rotationAmount = 180;
+				
+				switch (rotAxisValue) 
 				{
-					rotationAmount = 180;
-					
-					switch (rotAxisValue) {
+					case -1:
+						JOptionPane.showMessageDialog(null, "Please select an axis to rotate around.");
+						break;
 					case 0:
 						view1.evalString("move "+rotationAmount+" 0 0 0 0 0 0 0 5;");
-                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
-                                                inverted = !inverted;
+	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
+	                                            inverted = !inverted;
 						break;
 					case 1:
 						view1.evalString("move 0 "+rotationAmount+" 0 0 0 0 0 0 5;");
-                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
-                                                inverted = !inverted;
+	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
+	                                            inverted = !inverted;
 						break;
 					case 2:
 						view1.evalString("move 0 0 "+rotationAmount+" 0 0 0 0 0 5;");
-                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
-                                                inverted = !inverted;
+	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
+	                                            inverted = !inverted;
 						break;
 					case 3:
 						view1.evalString("move -"+rotationAmount+" 0 0 0 0 0 0 0 5;");
-                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
-                                                inverted = !inverted;
+	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
+	                                            inverted = !inverted;
 						break;
 					case 4:
 						view1.evalString("move 0 -"+rotationAmount+" 0 0 0 0 0 0 5;");
-                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
-                                                inverted = !inverted;
+	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
+	                                            inverted = !inverted;
 						break;
 					case 5:
 						view1.evalString("move 0 0 -"+rotationAmount+" 0 0 0 0 0 5;");
-                                                view1.evalString("select all; invertSelected POINT {0,0,0};");
-                                                inverted = !inverted;
+	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
+	                                            inverted = !inverted;
 						break;
 					default:
 						break;
-					}
 				}			
 			}
             else if(e.getSource() == rotButton)
             {
             	rotationAmount = 180;
 				
-				switch (rotAxisValue) {
-				case 0:
-					view1.evalString("move "+rotationAmount+" 0 0 0 0 0 0 0 5;");
-					break;
-				case 1:
-					view1.evalString("move 0 "+rotationAmount+" 0 0 0 0 0 0 5;");
-					break;
-				case 2:
-					view1.evalString("move 0 0 "+rotationAmount+" 0 0 0 0 0 5;");
-					break;
-				case 3:
-					view1.evalString("move -"+rotationAmount+" 0 0 0 0 0 0 0 5;");
-					break;
-				case 4:
-					view1.evalString("move 0 -"+rotationAmount+" 0 0 0 0 0 0 5;");
-					break;
-				case 5:
-					view1.evalString("move 0 0 -"+rotationAmount+" 0 0 0 0 0 5;");
-					break;
-				default:
-					break;
-					}
-                        }
+				switch (rotAxisValue) 
+				{
+					case -1:
+						JOptionPane.showMessageDialog(null, "Please select an axis to rotate around.");
+						break;
+					case 0:
+						view1.evalString("move "+rotationAmount+" 0 0 0 0 0 0 0 5;");
+						break;
+					case 1:
+						view1.evalString("move 0 "+rotationAmount+" 0 0 0 0 0 0 5;");
+						break;
+					case 2:
+						view1.evalString("move 0 0 "+rotationAmount+" 0 0 0 0 0 5;");
+						break;
+					case 3:
+						view1.evalString("move -"+rotationAmount+" 0 0 0 0 0 0 0 5;");
+						break;
+					case 4:
+						view1.evalString("move 0 -"+rotationAmount+" 0 0 0 0 0 0 5;");
+						break;
+					case 5:
+						view1.evalString("move 0 0 -"+rotationAmount+" 0 0 0 0 0 5;");
+						break;
+					default:
+						break;
+				}
+            }
 			else if(e.getSource() == reset0Button) view0.evalString("reset;");
 			else if(e.getSource() == reset1Button) 
 			{
@@ -604,31 +585,59 @@ public class PrototypeApplet extends Applet {
 					view1.evalString("select all; invertSelected POINT {0,0,0};");
 					inverted = !inverted;
 				}
+				
+				//remove any axis that is being drawn.
+				view1.evalString("draw axis1 DELETE");
+				
 			}
 			else if((e.getSource() == rotAxisX)||(e.getSource() == rotAxisX1))
-                        {
-                            rotAxisValue = 0;
-                        }
+            {
+                rotAxisValue = 0;
+                
+                //First delete any drawn axis, then draw the right one...
+                view1.evalString("draw axis1 DELETE");
+                view1.evalString("draw axis1 \"x axis\" {4,0,0} {-4,0,0}");
+            }
 			else if((e.getSource() == rotAxisY)||(e.getSource() == rotAxisY1))
-                        {
-                            rotAxisValue = 1;
-                        }
+	        {
+	            rotAxisValue = 1;
+	            
+	            //First delete any drawn axis, then draw the right one...
+	            view1.evalString("draw axis1 DELETE");
+                view1.evalString("draw axis1 \"y axis\" {0,4,0} {0,-4,0}");
+	        }
 			else if((e.getSource() == rotAxisZ)||(e.getSource() == rotAxisZ1))
-                        {
-                            rotAxisValue = 2;
-                        }
+            {
+                rotAxisValue = 2;
+                
+                //First delete any drawn axis, then draw the right one...
+	            view1.evalString("draw axis1 DELETE");
+                view1.evalString("draw axis1 \"z axis\" {0,0,4} {0,0,-4}");
+            }
 			else if((e.getSource() == rotAxisNegX)||(e.getSource() == rotAxisNegX1))
-                        {
-                            rotAxisValue = 3;
-                        }
+            {
+                rotAxisValue = 3;
+
+                //First delete any drawn axis, then draw the right one...
+                view1.evalString("draw axis1 DELETE");
+                view1.evalString("draw axis1 \"-x axis\" {-4,0,0} {4,0,0}");
+            }
 			else if((e.getSource() == rotAxisNegY)||(e.getSource() == rotAxisNegY1))
-                        {
-                            rotAxisValue = 4;
-                        }
+            {
+                rotAxisValue = 4;
+                
+	            //First delete any drawn axis, then draw the right one...
+	            view1.evalString("draw axis1 DELETE");
+                view1.evalString("draw axis1 \"-y axis\" {0,-4,0} {0,4,0}");
+            }
 			else if((e.getSource() == rotAxisNegZ)||(e.getSource() == rotAxisNegZ1))
-                        {
-                            rotAxisValue = 5;
-                        }
+            {
+                rotAxisValue = 5;
+
+                //First delete any drawn axis, then draw the right one...
+	            view1.evalString("draw axis1 DELETE");
+                view1.evalString("draw axis1 \"-z axis\" {0,0,-4} {0,0,4}");
+            }
 			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
 			{
 				///////////Possible Useful Commands\\\\\\\\\\\\\\\
@@ -638,7 +647,9 @@ public class PrototypeApplet extends Applet {
 				//view1..getBooleanProperty("ShowAxes");???
 				
 				
-				//view1.evalString("jmolSetCallback\"jmolCallbackGetter\" \"resizeCallback\"");
+				//draw axis1 DELETE
+				//JOptionPane.showMessageDialog(null, callbackString);				
+				view1.evalString("echo \"Hello World\"");
 				
 				//view1.setRotation(javax.vecmath.Matrix3f matrixRotation) //Could we possibly use matricies to move the atoms?
 				//view1.getAtomPoint3f(int);
@@ -653,13 +664,122 @@ public class PrototypeApplet extends Applet {
 			}
 		}		
 	}
-	public void jmolCallbackGetter(String[] args)
+	private class MyJmolListener implements JmolStatusListener
 	{
-		System.out.println("!!!!!!!!!!jmolCallbackGetter Called!!!!!!!!!!!!!");
-		for(int i=0; i<args.length; i++)
+
+		@Override
+		public void notifyCallback(EnumCallback type, Object[] data) 
 		{
-			System.out.println(args[0]);
+			String callback = callbacks.get(type);
+			String strInfo = (data == null || data[1] == null ? null : data[1]
+			          .toString());
+			
+			switch(type)
+			{
+				case CLICK:
+			        // x, y, action, int[] {action}
+			        // the fourth parameter allows an application to change the action
+					callbackString = "x=" + data[1] + " y=" + data[2] + " action=" + data[3] + " clickCount=" + data[4];
+					//JOptionPane.showMessageDialog(null, callbackString);
+					break;
+				case ECHO:
+					JOptionPane.showMessageDialog(null, strInfo);
+					break;
+				case APPLETREADY:
+					//JOptionPane.showMessageDialog(null, "Applet is Ready");
+					break;
+				case LOADSTRUCT: //Called when the applet is finished loading the new mol.
+					JOptionPane.showMessageDialog(null, "LOADSTRUCT");
+					break;
+			}
 		}
+
+		@Override
+		public boolean notifyEnabled(EnumCallback type) 
+		{
+			switch (type) 
+			{
+			  case ANIMFRAME:
+			  case ECHO:
+				  return true;
+			  case ERROR:
+			  case EVAL:
+			  case LOADSTRUCT:
+				  return true;
+			  case MEASURE:
+			  case MESSAGE:
+			  case PICK:
+			  case SYNC:
+			  case SCRIPT:
+			    return true;
+			  case APPLETREADY:
+				  return true;// Jmol 12.1.48
+			  case ATOMMOVED:  // Jmol 12.1.48
+			  case CLICK:
+				  return true;
+			  case HOVER:
+			  case MINIMIZATION:
+			  case RESIZE:
+			    break;
+			}
+		    return (callbacks.get(type) != null);
+		}
+
+		@Override
+		public void setCallbackFunction(String arg0, String arg1) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public String createImage(String arg0, String arg1, Object arg2,
+				int arg3) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public String eval(String arg0) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public float[][] functionXY(String arg0, int arg1, int arg2) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public float[][][] functionXYZ(String arg0, int arg1, int arg2, int arg3) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Map<String, Object> getProperty(String arg0) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Map<String, Object> getRegistryInfo() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public void resizeInnerPanel(String arg0) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void showUrl(String arg0) {
+			// TODO Auto-generated method stub
+			
+		}
+		
 	}
 	
 } 
