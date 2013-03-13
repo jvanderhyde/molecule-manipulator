@@ -168,8 +168,8 @@ public class PrototypeApplet extends Applet {
         view1.setJmolStatusListener(jListen1);
                       
         loadingMol0 = true;
-        view0.evalString("load \":caffeine\";");
         loadingMol1 = true;
+        view0.evalString("load \":caffeine\";");        
         view1.evalString("load \":caffeine\";");
     }
 	
@@ -228,7 +228,7 @@ public class PrototypeApplet extends Applet {
         borderTop.add(button);
 
         //add elements to SOUTH border
-        currentMolLabel = new JLabel("Current Molecule: Caffeine");
+        currentMolLabel = new JLabel("Current Molecule: ");
         currentMolLabel.setFont(new Font("Sans Serif", Font.BOLD, 24));
         JPanel currentPanel = new JPanel();
         currentPanel.setLayout(new FlowLayout());
@@ -421,6 +421,23 @@ public class PrototypeApplet extends Applet {
         
 	}
 	
+	public void changeCurrentMolLabel()
+	{
+		String urlName0 = view0.getModelSetPathName();
+		String urlName1 = view1.getModelSetPathName();
+		
+		while(!urlName0.equals(urlName1)) //Keep reloading the names until you have the same one
+		{
+			urlName0 = view0.getModelSetPathName();
+			urlName1 = view1.getModelSetPathName();
+		}
+        
+        urlName0 = urlName0.substring(55, urlName0.length()-19); 
+        //System.out.println(urlName);
+        currentMolecule = urlName0;
+        currentMolLabel.setText("Current Molecule: "+currentMolecule);
+        //http://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/SDF?record_type=3d
+	}
 	
 	//This code found at: http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
 	static class JmolPanel extends JPanel 
@@ -501,24 +518,14 @@ public class PrototypeApplet extends Applet {
 		{
 			if (e.getSource() == selectButton || e.getSource() == input)
 			{
-				//Check the evalString method in JMol 
 				currentMolecule = input.getText();
-				System.out.println("Current Molecule Set to " +currentMolecule);
+				
+				//Check the evalString method in JMol 
+				loadingMol0=true;
+				loadingMol1=false;
 				view0.evalString("try{load \":"+currentMolecule+"\"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
-		        view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");
+		        view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");       
 		        
-				//Still need to figure out how to get data from jmol to see if this should be changed or not...
-		        //  I think that the function of the 'prompt' command is significant because it is actually having jmol interact with java...
-		        while(!view1.getBooleanProperty("__appletReady"))
-		        {
-		        	System.out.println("Executing...");
-		        }//Wait for molecule to load...
-		        String urlName = view1.getModelSetPathName();
-		        urlName = urlName.substring(55, urlName.length()-19); 
-		        //System.out.println(urlName);
-		        currentMolecule = urlName;
-		        currentMolLabel.setText("Current Molecule: "+currentMolecule);
-		        //http://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/SDF?record_type=3d
 			}	
 			else if(e.getSource()== rotateButton)
 			{
@@ -740,13 +747,26 @@ public class PrototypeApplet extends Applet {
 					//JOptionPane.showMessageDialog(null, callbackString);
 					break;
 				case ECHO:
-					JOptionPane.showMessageDialog(null, strInfo);
+					//JOptionPane.showMessageDialog(null, strInfo);
 					break;
 				case APPLETREADY:
 					//JOptionPane.showMessageDialog(null, "Applet is Ready");
 					break;
 				case LOADSTRUCT: //Called when the applet is finished loading the new mol.
-					JOptionPane.showMessageDialog(null, "LOADSTRUCT");
+
+					//When this case has been hit twice, then it will set both of the
+					//  loading booleans to false.  This is when you know they are both
+					//  done loading...
+					
+					//JOptionPane.showMessageDialog(null, "Loaded");
+					
+					//if it has been called once, then set the second one false
+					if(!loadingMol0)
+					{
+						loadingMol1 = false;
+						changeCurrentMolLabel();
+					}
+					else loadingMol0 = false;
 					break;
 			}
 		}
