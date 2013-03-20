@@ -64,6 +64,7 @@ public class PrototypeApplet extends Applet {
     ////////////STATE VARIABLES\\\\\\\\\\\\
     private Boolean rotateOn = false;
     private Boolean inverted = false;
+    private Boolean reflected = false;
     
     ////////////BUTTONS\\\\\\\\\\\\
     private JButton selectButton = new JButton("Select");
@@ -623,7 +624,8 @@ public class PrototypeApplet extends Applet {
             }
             else if(e.getSource() == refButton)
             {
-                view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");		
+                view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
+                reflected = !reflected;
             }
 			else if(e.getSource() == reset0Button)
                         {
@@ -631,12 +633,26 @@ public class PrototypeApplet extends Applet {
                         }
 			else if(e.getSource() == reset1Button) 
 			{
-				view1.evalString("reset;");
-				if(inverted) 
+                                view1.evalString("reset;");
+				if(inverted && reflected) 
 				{
 					view1.evalString("select all; invertSelected POINT {0,0,0};");
+                                        view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
 					inverted = !inverted;
+                                        reflected = !reflected;
                                 }
+                                else if(inverted && !reflected)
+                                {
+                                    view1.evalString("select all; invertSelected POINT {0,0,0};");
+                                    inverted = !inverted;
+                                }
+                                else if (reflected && !inverted)
+                                {
+                                    view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
+                                    reflected = !reflected;
+                                }
+                                
+                                view1.evalString("reset;");
 				
 				//remove any axis that is being drawn.
 				view1.evalString("draw axis1 DELETE");
