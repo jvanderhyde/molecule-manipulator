@@ -122,8 +122,6 @@ public class PrototypeApplet extends Applet {
 		
 		out.setEditable(false);
 		
-		/*   I have killed the output for now because I was halving problems with prints from
-		 * the applet not showing up...  Not sure if perhaps Jmol is blocking them...
 		try //Redirect System.out to run to our output box.
 		{
 			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
@@ -133,7 +131,7 @@ public class PrototypeApplet extends Applet {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
-		*/     
+		     
 		
 		//Calculate the appropriate size for jmolPanel		
 		int jmolWidth = this.getWidth()/3;
@@ -871,8 +869,6 @@ public class PrototypeApplet extends Applet {
 		public void showUrl(String arg0) {
 			// TODO Auto-generated method stub
 			
-		}
-		
+		}	
 	}
-	
 } 
