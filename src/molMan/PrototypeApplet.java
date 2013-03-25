@@ -833,7 +833,7 @@ public class PrototypeApplet extends Applet {
 			        // the fourth parameter allows an application to change the action
 					callbackString = "x=" + data[1] + " y=" + data[2] + " action=" + data[3] + " clickCount=" + data[4];
 					//JOptionPane.showMessageDialog(null, callbackString);
-					break;
+					break; 
 				case ECHO:
 					//JOptionPane.showMessageDialog(null, strInfo);
 					break;
