@@ -28,6 +28,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.Hashtable;
 import java.util.Map;
 import javax.swing.*;
+import javax.vecmath.Point3f;
+
 import molMan.SimpleJmolExample.JmolPanel;
 import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
@@ -122,6 +124,7 @@ public class PrototypeApplet extends Applet {
 		
 		out.setEditable(false);
 		
+		/*
 		try //Redirect System.out to run to our output box.
 		{
 			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
@@ -131,7 +134,7 @@ public class PrototypeApplet extends Applet {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
-		     
+		*/     
 		
 		//Calculate the appropriate size for jmolPanel		
 		int jmolWidth = this.getWidth()/3;
@@ -522,7 +525,10 @@ public class PrototypeApplet extends Applet {
 				//Check the evalString method in JMol 
 				loadingMol0=true;
 				loadingMol1=false;
-				view0.evalString("try{load \":"+currentMolecule+"\"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
+				view0.evalString(
+					"try{" + //If the molecule fails to load an error dialogue box pops up...
+							"load \":"+currentMolecule+"\"" +
+					"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
 		        view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");       
 		        
 			}	
@@ -718,6 +724,71 @@ public class PrototypeApplet extends Applet {
             }
 			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
 			{
+				//Get the total number of atoms so we know what to loop through.
+				int numAtoms = view1.getAtomCount();
+				System.out.println("Atom Count = "+numAtoms);
+										
+				view1.evalString(
+					"set echo top left;"+
+					"echo \"Inverting...\";"+
+					
+					//We need arrays to store the original xyz locations and the change in x,y, and z
+					//Arrays for X
+					"origX = ["+numAtoms+"];"+
+					"xChange = ["+numAtoms+"];"+
+					"for(i=1; i<"+numAtoms+"+1; i++)" +
+					"{"+
+						"origX[@i] = {atomno = i}.x;"+
+						"xChange[@i] = {atomno = i}.x / 100;"+
+					"}"+
+					
+					//Arrays for Y
+					"origY = ["+numAtoms+"];"+
+					"yChange = ["+numAtoms+"];"+
+					"for(i=1; i<"+numAtoms+"+1; i++)" +
+					"{"+
+						"origY[@i] = {atomno = i}.y;"+
+						"yChange[@i] = {atomno = i}.y / 100;"+
+					"}"+
+					
+					//Arrays for Z
+					"origZ = ["+numAtoms+"];"+
+					"zChange = ["+numAtoms+"];"+
+					"for(i=1; i<"+numAtoms+"+1; i++)" +
+					"{"+
+						"origZ[@i] = {atomno = i}.z;"+
+						"zChange[@i] = {atomno = i}.z / 100;"+
+					"}"+
+					
+					
+					//Basically animate the inversion.
+					"for(j=0; j<200; j++)"+ //j is the number of frames
+					"{"+
+						"for(i=1; i<"+numAtoms+"+1; i++)" +
+						"{" +
+							//Select the next atom
+							"select none;" +
+							"select (*)[i];" +
+																			
+							//Get the position change that will have to be made each iteration							
+							"newXpos = -xChange[@i];"+
+							"newYpos = -yChange[@i];"+
+							"newZpos = -zChange[@i];"+
+						
+							"translateSelected {@newXpos, @newYpos, @newZpos};"+
+						"}"+
+						"delay 0.05;"+  //Controls the fps (Essentially the time between frames)
+					"}"+
+					"echo \"\";"	
+				);
+				
+				
+				//view1.evalString("translateSelected {0,5,0}");
+				 
+				//currentPoint = view1.getAtomPoint3f(0);
+				//System.out.println("Current Point: "+currentPoint.x +", "+currentPoint.y+", ");
+				
+				
 				///////////Possible Useful Commands\\\\\\\\\\\\\\\
 				//view1.getModelSetPathName();  \\Gets the URL for the current molecule at pubchem...
 				//view1.isScriptExecuting()  //returns true if no script is executing...
@@ -727,7 +798,7 @@ public class PrototypeApplet extends Applet {
 				
 				//draw axis1 DELETE
 				//JOptionPane.showMessageDialog(null, callbackString);				
-				view1.evalString("echo \"Hello World\"");
+				//view1.evalString("echo \"Hello World\"");
 				
 				//view1.setRotation(javax.vecmath.Matrix3f matrixRotation) //Could we possibly use matricies to move the atoms?
 				//view1.getAtomPoint3f(int);
@@ -754,6 +825,9 @@ public class PrototypeApplet extends Applet {
 			
 			switch(type)
 			{
+				case MESSAGE:
+					System.out.println(strInfo);
+					break;
 				case CLICK:
 			        // x, y, action, int[] {action}
 			        // the fourth parameter allows an application to change the action
@@ -771,9 +845,7 @@ public class PrototypeApplet extends Applet {
 					//When this case has been hit twice, then it will set both of the
 					//  loading booleans to false.  This is when you know they are both
 					//  done loading...
-					
-					//JOptionPane.showMessageDialog(null, "Loaded");
-					
+			
 					//if it has been called once, then set the second one false
 					if(!loadingMol0)
 					{
@@ -799,6 +871,7 @@ public class PrototypeApplet extends Applet {
 				  return true;
 			  case MEASURE:
 			  case MESSAGE:
+				  return true;
 			  case PICK:
 			  case SYNC:
 			  case SCRIPT:
