@@ -47,9 +47,9 @@ import org.jmol.viewer.Viewer;
 //The applet code  
 public class PrototypeApplet extends Applet {
 
-	private static final long serialVersionUID = 1L;	
-	private JmolPanel jmolPanel0;
-	private JmolPanel jmolPanel1;
+    private static final long serialVersionUID = 1L;	
+    private JmolPanel jmolPanel0;
+    private JmolPanel jmolPanel1;
     private final int W = 1400;
     private final int H = 800;
     private JScrollPane scrollPane;
@@ -75,7 +75,7 @@ public class PrototypeApplet extends Applet {
     private JButton reset0Button = new JButton("Reset");
     private JButton reset1Button = new JButton("Reset");
     private JButton rotButton = new JButton("Rotate");
-    private JButton rotInvButton = new JButton("Rotate & Invert");
+    private JButton rotRefButton = new JButton("Rotate & Reflect");
     private JButton refButton = new JButton("Reflect");
     private JRadioButton rotAxisX = new JRadioButton("X");
     private JRadioButton rotAxisY = new JRadioButton("Y");
@@ -248,10 +248,16 @@ public class PrototypeApplet extends Applet {
         ///////////////////////////MIDDLE SECTION\\\\\\\\\\\\\\\\\\\\\\\\
         //creates tabbed display
         JTabbedPane tabs = new JTabbedPane();
-        JPanel rot, inv, rotInv, ref;
+        JPanel rot, inv, rotRef, ref;
         
         rot = new JPanel();
         rot.setLayout(new BoxLayout(rot, BoxLayout.Y_AXIS));
+        String[] rotationString = {"Rotations", "c1", "c2", "c3", "c4", "c5", 
+            "c6", "c7", "c8", "c9", "c10"};
+        JComboBox rotationBox = new JComboBox(rotationString);
+        rotationBox.setSelectedIndex(0);
+        JPanel rotationSelection = new JPanel(new FlowLayout());
+        rotationSelection.add(rotationBox);
         JPanel rotationButFlow = new JPanel(new FlowLayout()); 
         rotButton.addActionListener(handler);
         rotationButFlow.add(rotButton);
@@ -271,6 +277,7 @@ public class PrototypeApplet extends Applet {
         rotAxisNegY.addActionListener(handler);
         rotAxisNegZ.addActionListener(handler);        
         rot.add(rotationTitle);
+        rot.add(rotationSelection);
         rot.add(rotAxisX);
         rot.add(rotAxisY);
         rot.add(rotAxisZ);
@@ -302,13 +309,19 @@ public class PrototypeApplet extends Applet {
         //inv.add(Box.createRigidArea(new Dimension(1, 500)));
         
         
-        rotInv = new JPanel();
-        rotInv.setLayout(new BoxLayout(rotInv, BoxLayout.Y_AXIS));
-        JPanel rotInvButFlow = new JPanel(new FlowLayout()); 
-        rotInvButton.addActionListener(handler);
-        rotInvButFlow.add(rotInvButton);
-        JLabel rotInvTitle = new JLabel("ROTATION & INVERSION");
-        rotInvTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+        rotRef = new JPanel();
+        rotRef.setLayout(new BoxLayout(rotRef, BoxLayout.Y_AXIS));
+        JPanel rotRefButFlow = new JPanel(new FlowLayout()); 
+        String[] rotRefString = {"Rot & Ref", "s1", "s2", "s3", "s4", "s5", 
+            "s6", "s7", "s8", "s9", "s10"};
+        JComboBox rotRefBox = new JComboBox(rotRefString);
+        rotRefBox.setSelectedIndex(0);
+        JPanel rotRefSelection = new JPanel(new FlowLayout());
+        rotRefSelection.add(rotRefBox);
+        rotRefButton.addActionListener(handler);
+        rotRefButFlow.add(rotRefButton);
+        JLabel rotRefTitle = new JLabel("ROTATION & REFLECTION");
+        rotRefTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
         ButtonGroup axis1 = new ButtonGroup();
         axis1.add(rotAxisX1);
         axis1.add(rotAxisY1);
@@ -322,14 +335,15 @@ public class PrototypeApplet extends Applet {
         rotAxisNegX1.addActionListener(handler);
         rotAxisNegY1.addActionListener(handler);
         rotAxisNegZ1.addActionListener(handler);        
-        rotInv.add(rotInvTitle);
-        rotInv.add(rotAxisX1);
-        rotInv.add(rotAxisY1);
-        rotInv.add(rotAxisZ1);
-        rotInv.add(rotAxisNegX1);
-        rotInv.add(rotAxisNegY1);
-        rotInv.add(rotAxisNegZ1);
-        rotInv.add(rotInvButFlow);
+        rotRef.add(rotRefTitle);
+        rotRef.add(rotRefSelection);
+        rotRef.add(rotAxisX1);
+        rotRef.add(rotAxisY1);
+        rotRef.add(rotAxisZ1);
+        rotRef.add(rotAxisNegX1);
+        rotRef.add(rotAxisNegY1);
+        rotRef.add(rotAxisNegZ1);
+        rotRef.add(rotRefButFlow);
         
         ref = new JPanel();
         ref.setLayout(new BoxLayout(ref, BoxLayout.Y_AXIS));
@@ -354,7 +368,7 @@ public class PrototypeApplet extends Applet {
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab("Rotation", null, rot, "Rotate the molecule around an axis");
         tabs.addTab("Inversion", null, inv, "Invert the molecule through a plane");
-        tabs.addTab("Rot & Inv", null, rotInv, "");
+        tabs.addTab("Rot & Ref", null, rotRef, "");
         tabs.addTab("Reflection", null, ref, "Reflect the molecule through a plane");
         
         //adds tabbed display to the middle of the layout
@@ -552,7 +566,7 @@ public class PrototypeApplet extends Applet {
 				view1.evalString("select all; invertSelected POINT {0,0,0};");
 				inverted = !inverted;
 			}
-			else if(e.getSource() == rotInvButton)
+			else if(e.getSource() == rotRefButton)
 			{
 				rotationAmount = 180;
 				
