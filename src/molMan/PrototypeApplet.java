@@ -94,7 +94,7 @@ public class PrototypeApplet extends Applet {
     private JRadioButton refZ = new JRadioButton("Z");
     private JButton previous = new JButton("Previous");
     private JButton next = new JButton("Next");
-    
+     
 
     protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
     private String callbackString = new String("Nothing");
