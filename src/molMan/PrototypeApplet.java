@@ -2,12 +2,11 @@
  * TODO:
  * 	- Add loading animation when loading new molecule.
  * 	- Add more control buttons beneath the JMol windows (Select All/None)
- * 	- Parse input from textbox (make sure that it is a real molecule...). 
- * 	- Fill all the tab functions. 
  * 	- Add Transformation animations
  */
 
  
+
 package molMan;
 //Reference the required Java libraries
 import java.applet.Applet; 
@@ -25,6 +24,7 @@ import java.io.PipedOutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.util.BitSet;
 import java.util.Hashtable;
 import java.util.Map;
 import javax.swing.*;
@@ -33,6 +33,7 @@ import javax.vecmath.Point3f;
 import molMan.SimpleJmolExample.JmolPanel;
 import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
+import org.jmol.api.JmolSelectionListener;
 import org.jmol.api.JmolSimpleViewer;
 import org.jmol.api.JmolStatusListener;
 import org.jmol.api.JmolSyncInterface;
@@ -47,9 +48,9 @@ import org.jmol.viewer.Viewer;
 //The applet code  
 public class PrototypeApplet extends Applet {
 
-    private static final long serialVersionUID = 1L;	
-    private JmolPanel jmolPanel0;
-    private JmolPanel jmolPanel1;
+	private static final long serialVersionUID = 1L;	
+	private JmolPanel jmolPanel0;
+	private JmolPanel jmolPanel1;
     private final int W = 1400;
     private final int H = 800;
     private JScrollPane scrollPane;
@@ -75,7 +76,7 @@ public class PrototypeApplet extends Applet {
     private JButton reset0Button = new JButton("Reset");
     private JButton reset1Button = new JButton("Reset");
     private JButton rotButton = new JButton("Rotate");
-    private JButton rotRefButton = new JButton("Rotate & Reflect");
+    private JButton rotInvButton = new JButton("Rotate & Invert");
     private JButton refButton = new JButton("Reflect");
     private JRadioButton rotAxisX = new JRadioButton("X");
     private JRadioButton rotAxisY = new JRadioButton("Y");
@@ -94,15 +95,18 @@ public class PrototypeApplet extends Applet {
     private JRadioButton refZ = new JRadioButton("Z");
     private JButton previous = new JButton("Previous");
     private JButton next = new JButton("Next");
-     
+    private JSlider xAxisSelecter;
+    
 
     protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
     private String callbackString = new String("Nothing");
     private MyJmolListener jListen0 = new MyJmolListener();
     private MyJmolListener jListen1 = new MyJmolListener();
-    private boolean loadingMol0 = false;
+    private boolean loadingMol0 = false;//These are both used to be able to tell when both Jmol windows are finished loading.
     private boolean loadingMol1 = false;
     String refPlane;
+    private MySelectionListener selectionListen0 = new MySelectionListener();
+    
     
 	public void init()
 	{	
@@ -168,6 +172,7 @@ public class PrototypeApplet extends Applet {
         
 
         view1.setJmolStatusListener(jListen1);
+        view1.addSelectionListener(selectionListen0);
                       
         loadingMol0 = true;
         loadingMol1 = true;
@@ -248,16 +253,10 @@ public class PrototypeApplet extends Applet {
         ///////////////////////////MIDDLE SECTION\\\\\\\\\\\\\\\\\\\\\\\\
         //creates tabbed display
         JTabbedPane tabs = new JTabbedPane();
-        JPanel rot, inv, rotRef, ref;
+        JPanel rot, inv, rotInv, ref;
         
         rot = new JPanel();
         rot.setLayout(new BoxLayout(rot, BoxLayout.Y_AXIS));
-        String[] rotationString = {"Rotations", "c1", "c2", "c3", "c4", "c5", 
-            "c6", "c7", "c8", "c9", "c10"};
-        JComboBox rotationBox = new JComboBox(rotationString);
-        rotationBox.setSelectedIndex(0);
-        JPanel rotationSelection = new JPanel(new FlowLayout());
-        rotationSelection.add(rotationBox);
         JPanel rotationButFlow = new JPanel(new FlowLayout()); 
         rotButton.addActionListener(handler);
         rotationButFlow.add(rotButton);
@@ -277,7 +276,6 @@ public class PrototypeApplet extends Applet {
         rotAxisNegY.addActionListener(handler);
         rotAxisNegZ.addActionListener(handler);        
         rot.add(rotationTitle);
-        rot.add(rotationSelection);
         rot.add(rotAxisX);
         rot.add(rotAxisY);
         rot.add(rotAxisZ);
@@ -309,19 +307,13 @@ public class PrototypeApplet extends Applet {
         //inv.add(Box.createRigidArea(new Dimension(1, 500)));
         
         
-        rotRef = new JPanel();
-        rotRef.setLayout(new BoxLayout(rotRef, BoxLayout.Y_AXIS));
-        JPanel rotRefButFlow = new JPanel(new FlowLayout()); 
-        String[] rotRefString = {"Rot & Ref", "s1", "s2", "s3", "s4", "s5", 
-            "s6", "s7", "s8", "s9", "s10"};
-        JComboBox rotRefBox = new JComboBox(rotRefString);
-        rotRefBox.setSelectedIndex(0);
-        JPanel rotRefSelection = new JPanel(new FlowLayout());
-        rotRefSelection.add(rotRefBox);
-        rotRefButton.addActionListener(handler);
-        rotRefButFlow.add(rotRefButton);
-        JLabel rotRefTitle = new JLabel("ROTATION & REFLECTION");
-        rotRefTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+        rotInv = new JPanel();
+        rotInv.setLayout(new BoxLayout(rotInv, BoxLayout.Y_AXIS));
+        JPanel rotInvButFlow = new JPanel(new FlowLayout()); 
+        rotInvButton.addActionListener(handler);
+        rotInvButFlow.add(rotInvButton);
+        JLabel rotInvTitle = new JLabel("ROTATION & INVERSION");
+        rotInvTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
         ButtonGroup axis1 = new ButtonGroup();
         axis1.add(rotAxisX1);
         axis1.add(rotAxisY1);
@@ -335,15 +327,14 @@ public class PrototypeApplet extends Applet {
         rotAxisNegX1.addActionListener(handler);
         rotAxisNegY1.addActionListener(handler);
         rotAxisNegZ1.addActionListener(handler);        
-        rotRef.add(rotRefTitle);
-        rotRef.add(rotRefSelection);
-        rotRef.add(rotAxisX1);
-        rotRef.add(rotAxisY1);
-        rotRef.add(rotAxisZ1);
-        rotRef.add(rotAxisNegX1);
-        rotRef.add(rotAxisNegY1);
-        rotRef.add(rotAxisNegZ1);
-        rotRef.add(rotRefButFlow);
+        rotInv.add(rotInvTitle);
+        rotInv.add(rotAxisX1);
+        rotInv.add(rotAxisY1);
+        rotInv.add(rotAxisZ1);
+        rotInv.add(rotAxisNegX1);
+        rotInv.add(rotAxisNegY1);
+        rotInv.add(rotAxisNegZ1);
+        rotInv.add(rotInvButFlow);
         
         ref = new JPanel();
         ref.setLayout(new BoxLayout(ref, BoxLayout.Y_AXIS));
@@ -368,7 +359,7 @@ public class PrototypeApplet extends Applet {
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab("Rotation", null, rot, "Rotate the molecule around an axis");
         tabs.addTab("Inversion", null, inv, "Invert the molecule through a plane");
-        tabs.addTab("Rot & Ref", null, rotRef, "");
+        tabs.addTab("Rot & Inv", null, rotInv, "");
         tabs.addTab("Reflection", null, ref, "Reflect the molecule through a plane");
         
         //adds tabbed display to the middle of the layout
@@ -437,6 +428,7 @@ public class PrototypeApplet extends Applet {
         
 	}
 	
+	//Jmol calls this when it is done loading the molecule so that the molecule name can be updated.
 	public void changeCurrentMolLabel()
 	{
 		String urlName0 = view0.getModelSetPathName();
@@ -447,12 +439,12 @@ public class PrototypeApplet extends Applet {
 			urlName0 = view0.getModelSetPathName();
 			urlName1 = view1.getModelSetPathName();
 		}
-        
+		
+        //http://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/SDF?record_type=3d
         urlName0 = urlName0.substring(55, urlName0.length()-19); 
-        //System.out.println(urlName);
+
         currentMolecule = urlName0;
         currentMolLabel.setText("Current Molecule: "+currentMolecule);
-        //http://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/SDF?record_type=3d
 	}
 	
 	//This code found at: http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
@@ -532,6 +524,7 @@ public class PrototypeApplet extends Applet {
 	{
 		public void actionPerformed(ActionEvent e) 
 		{
+			//Called if the SELECT button is hit and you try to load a molecule.
 			if (e.getSource() == selectButton || e.getSource() == input)
 			{
 				currentMolecule = input.getText();
@@ -545,7 +538,9 @@ public class PrototypeApplet extends Applet {
 					"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
 		        view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");       
 		        
-			}	
+			}
+			
+			//Called if the ROTATE On/Off button is hit to spin both molecules.
 			else if(e.getSource()== rotateButton)
 			{
 				if(rotateOn)
@@ -561,12 +556,74 @@ public class PrototypeApplet extends Applet {
 			        rotateOn = true;
 				}		        
 			}
+			
+			//Called if the INVERT button is hit.
 			else if(e.getSource() == invertButton)
 			{
-				view1.evalString("select all; invertSelected POINT {0,0,0};");
+				//Get the total number of atoms so we know what to loop through.
+				int numAtoms = view1.getAtomCount();
+				System.out.println("Atom Count = "+numAtoms);
+									
+				//This just sends one big segment of commands to jmol and lets it evaluate it...
+				view1.evalString(
+					"set echo top left;"+
+					"echo \"Inverting...\";"+
+					
+					//We need arrays to store the original xyz locations and the change in x,y, and z
+					//Arrays for X
+					"origX = ["+numAtoms+"];"+
+					"xChange = ["+numAtoms+"];"+
+					"for(i=1; i<"+numAtoms+"+1; i++)" +
+					"{"+
+						"origX[@i] = {atomno = i}.x;"+
+						"xChange[@i] = {atomno = i}.x / 100;"+
+					"}"+
+					
+					//Arrays for Y
+					"origY = ["+numAtoms+"];"+
+					"yChange = ["+numAtoms+"];"+
+					"for(i=1; i<"+numAtoms+"+1; i++)" +
+					"{"+
+						"origY[@i] = {atomno = i}.y;"+
+						"yChange[@i] = {atomno = i}.y / 100;"+
+					"}"+
+					
+					//Arrays for Z
+					"origZ = ["+numAtoms+"];"+
+					"zChange = ["+numAtoms+"];"+
+					"for(i=1; i<"+numAtoms+"+1; i++)" +
+					"{"+
+						"origZ[@i] = {atomno = i}.z;"+
+						"zChange[@i] = {atomno = i}.z / 100;"+
+					"}"+
+					
+					
+					//Basically animate the inversion.
+					"for(j=0; j<200; j++)"+ //j is the number of frames
+					"{"+
+						"for(i=1; i<"+numAtoms+"+1; i++)" +
+						"{" +
+							//Select the next atom
+							"select none;" +
+							"select (*)[i];" +
+																			
+							//Get the position change that will have to be made each iteration							
+							"newXpos = -xChange[@i];"+
+							"newYpos = -yChange[@i];"+
+							"newZpos = -zChange[@i];"+
+						
+							"translateSelected {@newXpos, @newYpos, @newZpos};"+
+						"}"+
+						"delay 0.025;"+  //Controls the fps (Essentially the time between frames)
+					"}"+
+					"echo \"\";"	
+				);
+								
 				inverted = !inverted;
 			}
-			else if(e.getSource() == rotRefButton)
+			
+			//Called if the ROTATE and REFLECT button is hit.
+			else if(e.getSource() == rotInvButton)
 			{
 				rotationAmount = 180;
 				
@@ -609,6 +666,8 @@ public class PrototypeApplet extends Applet {
 						break;
 				}			
 			}
+			
+			//Called if the ROTATE Button is hit
             else if(e.getSource() == rotButton)
             {
             	rotationAmount = 180;
@@ -640,42 +699,50 @@ public class PrototypeApplet extends Applet {
 						break;
 				}
             }
+			
+			//Called if the REFLECT Button is hit.
             else if(e.getSource() == refButton)
             {
                 view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
                 reflected = !reflected;
             }
+			
+			//Called if the RESET button is hit for the left Jmol screen
 			else if(e.getSource() == reset0Button)
-                        {
-                            view0.evalString("reset;");
-                        }
+            {
+                view0.evalString("reset;");
+            }
+			
+			//Called if the RESET button is hit for the right Jmol screen.
 			else if(e.getSource() == reset1Button) 
 			{
-                                view1.evalString("reset;");
+                view1.evalString("reset;");  //Resets the view.
+                
+                //Check to see if there have been any transformations...  if so make undo them
 				if(inverted && reflected) 
 				{
 					view1.evalString("select all; invertSelected POINT {0,0,0};");
                                         view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
 					inverted = !inverted;
-                                        reflected = !reflected;
-                                }
-                                else if(inverted && !reflected)
-                                {
-                                    view1.evalString("select all; invertSelected POINT {0,0,0};");
-                                    inverted = !inverted;
-                                }
-                                else if (reflected && !inverted)
-                                {
-                                    view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
-                                    reflected = !reflected;
-                                }
-                                
-                                view1.evalString("reset;");
-				
+                    reflected = !reflected;
+                }
+                else if(inverted && !reflected)
+                {
+                    view1.evalString("select all; invertSelected POINT {0,0,0};");
+                    inverted = !inverted;
+                }
+                else if (reflected && !inverted)
+                {
+                    view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
+                    reflected = !reflected;
+                }
+                
 				//remove any axis that is being drawn.
 				view1.evalString("draw axis1 DELETE");
 				
 			}
+			
+			//Called if 
 			else if((e.getSource() == rotAxisX)||(e.getSource() == rotAxisX1))
             {
                 rotAxisValue = 0;
@@ -738,69 +805,8 @@ public class PrototypeApplet extends Applet {
             }
 			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
 			{
-				//Get the total number of atoms so we know what to loop through.
-				int numAtoms = view1.getAtomCount();
-				System.out.println("Atom Count = "+numAtoms);
-										
-				view1.evalString(
-					"set echo top left;"+
-					"echo \"Inverting...\";"+
-					
-					//We need arrays to store the original xyz locations and the change in x,y, and z
-					//Arrays for X
-					"origX = ["+numAtoms+"];"+
-					"xChange = ["+numAtoms+"];"+
-					"for(i=1; i<"+numAtoms+"+1; i++)" +
-					"{"+
-						"origX[@i] = {atomno = i}.x;"+
-						"xChange[@i] = {atomno = i}.x / 100;"+
-					"}"+
-					
-					//Arrays for Y
-					"origY = ["+numAtoms+"];"+
-					"yChange = ["+numAtoms+"];"+
-					"for(i=1; i<"+numAtoms+"+1; i++)" +
-					"{"+
-						"origY[@i] = {atomno = i}.y;"+
-						"yChange[@i] = {atomno = i}.y / 100;"+
-					"}"+
-					
-					//Arrays for Z
-					"origZ = ["+numAtoms+"];"+
-					"zChange = ["+numAtoms+"];"+
-					"for(i=1; i<"+numAtoms+"+1; i++)" +
-					"{"+
-						"origZ[@i] = {atomno = i}.z;"+
-						"zChange[@i] = {atomno = i}.z / 100;"+
-					"}"+
-					
-					
-					//Basically animate the inversion.
-					"for(j=0; j<200; j++)"+ //j is the number of frames
-					"{"+
-						"for(i=1; i<"+numAtoms+"+1; i++)" +
-						"{" +
-							//Select the next atom
-							"select none;" +
-							"select (*)[i];" +
-																			
-							//Get the position change that will have to be made each iteration							
-							"newXpos = -xChange[@i];"+
-							"newYpos = -yChange[@i];"+
-							"newZpos = -zChange[@i];"+
-						
-							"translateSelected {@newXpos, @newYpos, @newZpos};"+
-						"}"+
-						"delay 0.05;"+  //Controls the fps (Essentially the time between frames)
-					"}"+
-					"echo \"\";"	
-				);
 				
 				
-				//view1.evalString("translateSelected {0,5,0}");
-				 
-				//currentPoint = view1.getAtomPoint3f(0);
-				//System.out.println("Current Point: "+currentPoint.x +", "+currentPoint.y+", ");
 				
 				
 				///////////Possible Useful Commands\\\\\\\\\\\\\\\
@@ -839,6 +845,9 @@ public class PrototypeApplet extends Applet {
 			
 			switch(type)
 			{
+				case ATOMMOVED:
+					//System.out.println("Atom Moved...");
+					break;
 				case MESSAGE:
 					System.out.println(strInfo);
 					break;
@@ -846,6 +855,10 @@ public class PrototypeApplet extends Applet {
 			        // x, y, action, int[] {action}
 			        // the fourth parameter allows an application to change the action
 					callbackString = "x=" + data[1] + " y=" + data[2] + " action=" + data[3] + " clickCount=" + data[4];
+					
+					//view1.evalString("draw axis1 DELETE");
+	                //view1.evalString("draw axis1 \"x axis\" {4,0,0} {-4,0,0}");
+					
 					//JOptionPane.showMessageDialog(null, callbackString);
 					break; 
 				case ECHO:
@@ -893,6 +906,7 @@ public class PrototypeApplet extends Applet {
 			  case APPLETREADY:
 				  return true;// Jmol 12.1.48
 			  case ATOMMOVED:  // Jmol 12.1.48
+				  return true;
 			  case CLICK:
 				  return true;
 			  case HOVER:
@@ -904,58 +918,59 @@ public class PrototypeApplet extends Applet {
 		}
 
 		@Override
-		public void setCallbackFunction(String arg0, String arg1) {
-			// TODO Auto-generated method stub
+		public void setCallbackFunction(String arg0, String arg1) {	}
+
+		@Override
+		public String createImage(String arg0, String arg1, Object arg2, int arg3) 
+		{
+			return null;
+		}
+
+		@Override
+		public String eval(String arg0) 
+		{
+			return null;
+		}
+
+		@Override
+		public float[][] functionXY(String arg0, int arg1, int arg2) 
+		{
+			return null;
+		}
+
+		@Override
+		public float[][][] functionXYZ(String arg0, int arg1, int arg2, int arg3) 
+		{
+			return null;
+		}
+
+		@Override
+		public Map<String, Object> getProperty(String arg0) 
+		{
+			return null;
+		}
+
+		@Override
+		public Map<String, Object> getRegistryInfo() 
+		{
+			return null;
+		}
+
+		@Override
+		public void resizeInnerPanel(String arg0) {}
+
+		@Override
+		public void showUrl(String arg0) {}	
+	}
+	
+	private class MySelectionListener implements JmolSelectionListener
+	{
+		@Override
+		public void selectionChanged(BitSet arg0) 
+		{
+			//System.out.println("Selection Changed");
 			
 		}
-
-		@Override
-		public String createImage(String arg0, String arg1, Object arg2,
-				int arg3) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public String eval(String arg0) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public float[][] functionXY(String arg0, int arg1, int arg2) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public float[][][] functionXYZ(String arg0, int arg1, int arg2, int arg3) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Map<String, Object> getProperty(String arg0) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public Map<String, Object> getRegistryInfo() {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public void resizeInnerPanel(String arg0) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void showUrl(String arg0) {
-			// TODO Auto-generated method stub
-			
-		}	
+		
 	}
 } 
