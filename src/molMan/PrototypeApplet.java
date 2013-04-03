@@ -28,6 +28,8 @@ import java.util.BitSet;
 import java.util.Hashtable;
 import java.util.Map;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.vecmath.Point3f;
 
 import molMan.SimpleJmolExample.JmolPanel;
@@ -46,7 +48,8 @@ import org.jmol.util.TextFormat;
 import org.jmol.viewer.Viewer;
 
 //The applet code  
-public class PrototypeApplet extends Applet {
+public class PrototypeApplet extends Applet 
+{
 
 	private static final long serialVersionUID = 1L;	
 	private JmolPanel jmolPanel0;
@@ -95,8 +98,16 @@ public class PrototypeApplet extends Applet {
     private JRadioButton refZ = new JRadioButton("Z");
     private JButton previous = new JButton("Previous");
     private JButton next = new JButton("Next");
-    private JSlider xAxisSelecter;
-    
+    private JSlider zAxisSlider;
+    private JSlider xAxisSlider;
+    private MyChangeListener sliderListener = new MyChangeListener();
+    private JLabel sliderTest = new JLabel("0");
+    //These vectors are both halves of the real axis...
+    private int axisRadius = 4;
+	private Vector3 axisEnd0 = new Vector3(axisRadius, 0, 0);
+	private Vector3 axisEnd1 = new Vector3(-axisRadius,0,0);
+	private int zAxisRot = 0;
+	private int xAxisRot = 0;
 
     protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
     private String callbackString = new String("Nothing");
@@ -255,6 +266,7 @@ public class PrototypeApplet extends Applet {
         JTabbedPane tabs = new JTabbedPane();
         JPanel rot, inv, rotInv, ref;
         
+        //ROTATE TAB\\
         rot = new JPanel();
         rot.setLayout(new BoxLayout(rot, BoxLayout.Y_AXIS));
         JPanel rotationButFlow = new JPanel(new FlowLayout()); 
@@ -262,6 +274,14 @@ public class PrototypeApplet extends Applet {
         rotationButFlow.add(rotButton);
         JLabel rotationTitle = new JLabel("ROTATION");
         rotationTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+        
+        zAxisSlider = new JSlider(JSlider.HORIZONTAL, -90, 90,0);
+        zAxisSlider.addChangeListener(sliderListener);
+        
+        xAxisSlider = new JSlider(JSlider.HORIZONTAL, -90, 90, 0);
+        xAxisSlider.addChangeListener(sliderListener);
+        
+        /*
         ButtonGroup axis = new ButtonGroup();
         axis.add(rotAxisX);
         axis.add(rotAxisY);
@@ -282,8 +302,14 @@ public class PrototypeApplet extends Applet {
         rot.add(rotAxisNegX);
         rot.add(rotAxisNegY);
         rot.add(rotAxisNegZ);
-        rot.add(rotationButFlow);
+        */
         
+        rot.add(rotationButFlow);
+        rot.add(zAxisSlider);
+        rot.add(sliderTest);
+        rot.add(xAxisSlider);
+        
+        //INVERT Tab\\
         inv = new JPanel();
         inv.setLayout(new BoxLayout(inv, BoxLayout.Y_AXIS));
         JPanel invButFlow = new JPanel(new FlowLayout()); 
@@ -306,7 +332,7 @@ public class PrototypeApplet extends Applet {
         inv.add(invButFlow);
         //inv.add(Box.createRigidArea(new Dimension(1, 500)));
         
-        
+        //ROTATE and REFLECT Tab\\
         rotInv = new JPanel();
         rotInv.setLayout(new BoxLayout(rotInv, BoxLayout.Y_AXIS));
         JPanel rotInvButFlow = new JPanel(new FlowLayout()); 
@@ -336,6 +362,7 @@ public class PrototypeApplet extends Applet {
         rotInv.add(rotAxisNegZ1);
         rotInv.add(rotInvButFlow);
         
+        //REFLECT Tab\\
         ref = new JPanel();
         ref.setLayout(new BoxLayout(ref, BoxLayout.Y_AXIS));
         JPanel reflectionButFlow = new JPanel(new FlowLayout()); 
@@ -359,8 +386,9 @@ public class PrototypeApplet extends Applet {
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab("Rotation", null, rot, "Rotate the molecule around an axis");
         tabs.addTab("Inversion", null, inv, "Invert the molecule through a plane");
-        tabs.addTab("Rot & Inv", null, rotInv, "");
         tabs.addTab("Reflection", null, ref, "Reflect the molecule through a plane");
+        tabs.addTab("Rot & Ref", null, rotInv, "");
+        
         
         //adds tabbed display to the middle of the layout
         JPanel molViewer0 = new JPanel();
@@ -806,7 +834,8 @@ public class PrototypeApplet extends Applet {
 			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
 			{
 				
-				
+				//Perhaps I can use this to set the axis radius...
+				view1.getRotationRadius();
 				
 				
 				///////////Possible Useful Commands\\\\\\\\\\\\\\\
@@ -972,5 +1001,95 @@ public class PrototypeApplet extends Applet {
 			
 		}
 		
+	}
+	
+	/*
+	 * This class listens to the sliders (for the planes and axes)  and will adjust things 
+	 *   as you move the slider bars.
+	 */
+	private class MyChangeListener implements ChangeListener
+	{
+		public void stateChanged(ChangeEvent e) 
+		{
+		    JSlider source = (JSlider)e.getSource();
+		    
+		    //the XAXISSLIDER is being adjusted.
+		    if(e.getSource() == zAxisSlider)
+		    {
+		    	int zValue = zAxisSlider.getValue();
+		    	sliderTest.setText(""+zValue);
+		    	
+		    	//This gets us the adjusted value (the ammount of the new rotation...)
+		    	zValue = zValue - zAxisRot;
+		    	
+		    	//Make sure we keep track of just how far we have rotated...
+		    	zAxisRot = zAxisSlider.getValue();
+		    	
+		    	//view1.evalString(
+		    	//	"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
+		    	//		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
+		    	
+		    	//Create a rotation matrix for the current rotation
+		    	Matrix3x3 rotMatrix0 = Matrix3x3.rotationMatrix(zValue);
+		    	Matrix3x3 rotMatrix1 = Matrix3x3.rotationMatrix(zValue);
+		    	
+		    	//Apply the rotation to the axis end.
+		    	axisEnd0 = rotMatrix0.transform(axisEnd0);
+		    	axisEnd1 = rotMatrix1.transform(axisEnd1);
+		    	
+		    	//Redraw the new Axis.
+		    	view1.evalString(
+		    		"draw axis1 DELETE;" + //Erase old axis and then draw new one.
+		    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
+			    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
+		    	
+		    }
+		    else if(e.getSource() == xAxisSlider)
+		    {
+		    	int xValue = xAxisSlider.getValue();
+		    	//sliderTest.setText(""+xValue);
+		    	
+		    	//This gets us the adjusted value (the ammount of the new rotation...)
+		    	xValue = xValue - xAxisRot;
+		    	
+		    	//Make sure we keep track of just how far we have rotated...
+		    	xAxisRot = xAxisSlider.getValue();
+		    	
+		    			    	
+		    	//Create a rotation matrix for the current rotation
+		    	Matrix3x3 rotMatrix0 = Matrix3x3.rotationMatrix(xValue);
+		    	Matrix3x3 rotMatrix1 = Matrix3x3.rotationMatrix(xValue);
+		    	
+		    	//To rotate around a different axis, we need to have two new vectors that will match
+		    	//  the rotation axis...
+		    	Vector3 tempAxis0 = new Vector3(axisEnd0.z, axisEnd0.y, axisEnd0.x);
+		    	Vector3 tempAxis1 = new Vector3(axisEnd1.z, axisEnd1.y, axisEnd1.x);
+		    	
+		    	//Apply the rotation to the axis end.
+		    	tempAxis0 = rotMatrix0.transform(tempAxis0);
+		    	tempAxis1 = rotMatrix1.transform(tempAxis1);
+		    	
+		    	//Save the new axis back to the right place.
+		    	axisEnd0 = new Vector3(tempAxis0.z, tempAxis0.y, tempAxis0.x);
+		    	axisEnd1 = new Vector3(tempAxis1.z, tempAxis1.y, tempAxis1.x);
+		    	
+		    	//Redraw the new Axis.
+		    	view1.evalString(
+		    		"draw axis1 DELETE;" + //Erase old axis and then draw new one.
+		    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
+			    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
+		    	
+		    }
+		    /*
+		    if (!source.getValueIsAdjusting()) 
+		    {
+		        
+		    } 
+		    else 
+		    {
+		    	
+		    }
+		    */
+		 }
 	}
 } 
