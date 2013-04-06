@@ -64,7 +64,6 @@ public class PrototypeApplet extends Applet
     private JmolViewer view1;
     private JTextArea out;
     private int rotAxisValue = -1; //0=x, 1=y, 2=z, 3=-x, 4=-y, 5=-z, -1=not selected
-
     private int rotationAmount;
      
     ////////////STATE VARIABLES\\\\\\\\\\\\
@@ -98,16 +97,26 @@ public class PrototypeApplet extends Applet
     private JRadioButton refZ = new JRadioButton("Z");
     private JButton previous = new JButton("Previous");
     private JButton next = new JButton("Next");
+    
     private JSlider zAxisSlider;
     private JSlider xAxisSlider;
+    private JSlider yAxisSlider;
     private MyChangeListener sliderListener = new MyChangeListener();
-    private JLabel sliderTest = new JLabel("0");
+    private JTextField zAxisField = new JTextField("0", 2);
+    private JTextField xAxisField = new JTextField("0", 2);
+    private JTextField yAxisField = new JTextField("0", 2);
+    private JLabel zAxisLabel = new JLabel("Z Axis Rotation: ");
+    private JLabel xAxisLabel = new JLabel("X Axis Rotation: ");
+    private JLabel yAxisLabel = new JLabel("Y Axis Rotation: ");
     //These vectors are both halves of the real axis...
     private int axisRadius = 4;
 	private Vector3 axisEnd0 = new Vector3(axisRadius, 0, 0);
 	private Vector3 axisEnd1 = new Vector3(-axisRadius,0,0);
 	private int zAxisRot = 0;
 	private int xAxisRot = 0;
+	private int yAxisRot = 0;
+	private JRadioButton showAxis = new JRadioButton("Show Axis");
+	private boolean axisShown = false;
 
     protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
     private String callbackString = new String("Nothing");
@@ -170,23 +179,13 @@ public class PrototypeApplet extends Applet
         view0.setJmolStatusListener(jListen0);
         view1 = jmolPanel1.getViewer();
         
-        //jListen1 = new StatusListener(jmolPanel1);
-        //view1.setJmolStatusListener(jListen1);
-        
-        //view0.setJmolStatusListener(jListen);
-         
-        //view0.openFile("5PTI.pdb");
-        //view1.openFile("5PTI.pdb");
-        
-        //viewer.evalString("select *; spacefill off; wireframe off; backbone 0.4;  ");
-        //viewer.evalString("color chain;  ");
-        
-
         view1.setJmolStatusListener(jListen1);
         view1.addSelectionListener(selectionListen0);
                       
         loadingMol0 = true;
         loadingMol1 = true;
+        
+        //Load up the initial molecules...
         view0.evalString("load \":caffeine\";");        
         view1.evalString("load \":caffeine\";");
     }
@@ -261,6 +260,8 @@ public class PrototypeApplet extends Applet
         top.add(logo);       
         top.add(molName);
         
+        
+        
         ///////////////////////////MIDDLE SECTION\\\\\\\\\\\\\\\\\\\\\\\\
         //creates tabbed display
         JTabbedPane tabs = new JTabbedPane();
@@ -275,11 +276,43 @@ public class PrototypeApplet extends Applet
         JLabel rotationTitle = new JLabel("ROTATION");
         rotationTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
         
+        rot.add(showAxis);
+        showAxis.addActionListener(handler);
+        
         zAxisSlider = new JSlider(JSlider.HORIZONTAL, -90, 90,0);
         zAxisSlider.addChangeListener(sliderListener);
         
         xAxisSlider = new JSlider(JSlider.HORIZONTAL, -90, 90, 0);
         xAxisSlider.addChangeListener(sliderListener);
+        
+        yAxisSlider = new JSlider(JSlider.HORIZONTAL, -90, 90, 0);
+        yAxisSlider.addChangeListener(sliderListener);
+      
+        rot.add(rotationButFlow);
+        
+        JPanel zAxisRotFlow = new JPanel(new FlowLayout());
+        zAxisRotFlow.add(zAxisLabel);
+        zAxisRotFlow.add(zAxisField);
+        zAxisField.addActionListener(handler);
+        rot.add(zAxisRotFlow);
+        rot.add(zAxisSlider);
+        
+        JPanel xAxisRotFlow = new JPanel(new FlowLayout());
+        xAxisRotFlow.add(xAxisLabel);
+        xAxisRotFlow.add(xAxisField);
+        xAxisField.addActionListener(handler);
+        rot.add(xAxisRotFlow);
+        rot.add(xAxisSlider);
+        
+        JPanel yAxisRotFlow = new JPanel(new FlowLayout());
+        yAxisRotFlow.add(yAxisLabel);
+        yAxisRotFlow.add(yAxisField);
+        yAxisField.addActionListener(handler);
+        rot.add(yAxisRotFlow);
+        rot.add(yAxisSlider);
+        
+        
+        
         
         /*
         ButtonGroup axis = new ButtonGroup();
@@ -304,10 +337,6 @@ public class PrototypeApplet extends Applet
         rot.add(rotAxisNegZ);
         */
         
-        rot.add(rotationButFlow);
-        rot.add(zAxisSlider);
-        rot.add(sliderTest);
-        rot.add(xAxisSlider);
         
         //INVERT Tab\\
         inv = new JPanel();
@@ -699,8 +728,24 @@ public class PrototypeApplet extends Applet
             else if(e.getSource() == rotButton)
             {
             	rotationAmount = 180;
+            	showAxis.setSelected(true);
+		    	axisShown=true;
 				
-				switch (rotAxisValue) 
+				//1.  Rotate the molecule so that the axis we want to rotate around is aligned with 
+            	//  an axis that we can rotate around.  (We can use the xyz values from the 
+            	//  axis rotation...)
+            	//2.  Rotate the molecule the desired degrees.
+            	//3.  Rotate the molecule back to the original orientation.  
+            	
+            	view1.evalString(
+            		"set echo top left;"+
+            		"echo \"Rotating...\";"+
+            		"delay 5;"+
+            		"rotate $axis1 "+ rotationAmount+" 30;"+//30 is the angles/sec of the rotation
+            		"echo \"\";");
+            	
+            	/*
+            	switch (rotAxisValue) 
 				{
 					case -1:
 						JOptionPane.showMessageDialog(null, "Please select an axis to rotate around.");
@@ -726,6 +771,7 @@ public class PrototypeApplet extends Applet
 					default:
 						break;
 				}
+				*/
             }
 			
 			//Called if the REFLECT Button is hit.
@@ -765,8 +811,20 @@ public class PrototypeApplet extends Applet
                     reflected = !reflected;
                 }
                 
+				
+				//Reset the sliders to 0
+				xAxisSlider.setValue(0);
+				yAxisSlider.setValue(0);
+				zAxisSlider.setValue(0);
+				
 				//remove any axis that is being drawn.
 				view1.evalString("draw axis1 DELETE");
+				if(axisShown)
+				{
+					showAxis.setSelected(false);
+					axisShown = false;
+				}
+				
 				
 			}
 			
@@ -830,6 +888,25 @@ public class PrototypeApplet extends Applet
             else if(e.getSource() == refZ)
             {
                 refPlane = "xy";
+            }
+            else if(e.getSource() == zAxisField)
+            {
+            	zAxisSlider.setValue(Integer.parseInt(zAxisField.getText()));
+            }
+            else if(e.getSource() == xAxisField)
+            {
+            	xAxisSlider.setValue(Integer.parseInt(xAxisField.getText()));
+            }
+            else if(e.getSource() == yAxisField)
+            {
+            	yAxisSlider.setValue(Integer.parseInt(yAxisField.getText()));
+            }
+            else if(e.getSource() == showAxis)
+            {
+            	axisShown = !axisShown;
+            	if(axisShown == true) view1.evalString("draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
+			    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
+            	else view1.evalString("draw axis1 DELETE");
             }
 			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
 			{
@@ -1016,8 +1093,11 @@ public class PrototypeApplet extends Applet
 		    //the XAXISSLIDER is being adjusted.
 		    if(e.getSource() == zAxisSlider)
 		    {
+		    	showAxis.setSelected(true);
+		    	axisShown=true;
+		    	
 		    	int zValue = zAxisSlider.getValue();
-		    	sliderTest.setText(""+zValue);
+		    	zAxisField.setText(""+zValue);
 		    	
 		    	//This gets us the adjusted value (the ammount of the new rotation...)
 		    	zValue = zValue - zAxisRot;
@@ -1039,15 +1119,18 @@ public class PrototypeApplet extends Applet
 		    	
 		    	//Redraw the new Axis.
 		    	view1.evalString(
-		    		"draw axis1 DELETE;" + //Erase old axis and then draw new one.
+		    		//"draw axis1 DELETE;" + //Erase old axis and then draw new one.
 		    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
 			    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
 		    	
 		    }
 		    else if(e.getSource() == xAxisSlider)
 		    {
+		    	showAxis.setSelected(true);
+		    	axisShown=true;
+		    	
 		    	int xValue = xAxisSlider.getValue();
-		    	//sliderTest.setText(""+xValue);
+		    	xAxisField.setText(""+xValue);
 		    	
 		    	//This gets us the adjusted value (the ammount of the new rotation...)
 		    	xValue = xValue - xAxisRot;
@@ -1075,11 +1158,51 @@ public class PrototypeApplet extends Applet
 		    	
 		    	//Redraw the new Axis.
 		    	view1.evalString(
-		    		"draw axis1 DELETE;" + //Erase old axis and then draw new one.
+		    		//"draw axis1 DELETE;" + //Erase old axis and then draw new one.
 		    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
 			    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
 		    	
 		    }
+		    else if(e.getSource() == yAxisSlider)
+		    {
+		    	showAxis.setSelected(true);
+		    	axisShown=true;
+		    	
+		    	int yValue = yAxisSlider.getValue();
+		    	yAxisField.setText(""+yValue);
+		    	
+		    	//This gets us the adjusted value (the ammount of the new rotation...)
+		    	yValue = yValue - yAxisRot;
+		    	
+		    	//Make sure we keep track of just how far we have rotated...
+		    	yAxisRot = yAxisSlider.getValue();
+		    	
+		    			    	
+		    	//Create a rotation matrix for the current rotation
+		    	Matrix3x3 rotMatrix0 = Matrix3x3.rotationMatrix(yValue);
+		    	Matrix3x3 rotMatrix1 = Matrix3x3.rotationMatrix(yValue);
+		    	
+		    	//To rotate around a different axis, we need to have two new vectors that will match
+		    	//  the rotation axis...
+		    	Vector3 tempAxis0 = new Vector3(axisEnd0.x, axisEnd0.z, axisEnd0.y);
+		    	Vector3 tempAxis1 = new Vector3(axisEnd1.x, axisEnd1.z, axisEnd1.y);
+		    	
+		    	//Apply the rotation to the axis end.
+		    	tempAxis0 = rotMatrix0.transform(tempAxis0);
+		    	tempAxis1 = rotMatrix1.transform(tempAxis1);
+		    	
+		    	//Save the new axis back to the right place.
+		    	axisEnd0 = new Vector3(tempAxis0.x, tempAxis0.z, tempAxis0.y);
+		    	axisEnd1 = new Vector3(tempAxis1.x, tempAxis1.z, tempAxis1.y);
+		    	
+		    	//Redraw the new Axis.
+		    	view1.evalString(
+		    		//"draw axis1 DELETE;" + //Erase old axis and then draw new one.
+		    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
+			    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
+		    	
+		    }
+
 		    /*
 		    if (!source.getValueIsAdjusting()) 
 		    {
