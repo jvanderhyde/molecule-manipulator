@@ -109,7 +109,7 @@ public class PrototypeApplet extends Applet
     private JLabel xAxisLabel = new JLabel("X Axis Rotation: ");
     private JLabel yAxisLabel = new JLabel("Y Axis Rotation: ");
     //These vectors are both halves of the real axis...
-    private int axisRadius = 4;
+    private float axisRadius = 5.539443f;  
 	private Vector3 axisEnd0 = new Vector3(axisRadius, 0, 0);
 	private Vector3 axisEnd1 = new Vector3(-axisRadius,0,0);
 	private int zAxisRot = 0;
@@ -288,7 +288,7 @@ public class PrototypeApplet extends Applet
         yAxisSlider = new JSlider(JSlider.HORIZONTAL, -90, 90, 0);
         yAxisSlider.addChangeListener(sliderListener);
       
-        rot.add(rotationButFlow);
+        
         
         JPanel zAxisRotFlow = new JPanel(new FlowLayout());
         zAxisRotFlow.add(zAxisLabel);
@@ -311,33 +311,8 @@ public class PrototypeApplet extends Applet
         rot.add(yAxisRotFlow);
         rot.add(yAxisSlider);
         
-        
-        
-        
-        /*
-        ButtonGroup axis = new ButtonGroup();
-        axis.add(rotAxisX);
-        axis.add(rotAxisY);
-        axis.add(rotAxisZ);
-        axis.add(rotAxisNegX);
-        axis.add(rotAxisNegY);
-        axis.add(rotAxisNegZ);
-        rotAxisX.addActionListener(handler);
-        rotAxisY.addActionListener(handler);
-        rotAxisZ.addActionListener(handler);
-        rotAxisNegX.addActionListener(handler);
-        rotAxisNegY.addActionListener(handler);
-        rotAxisNegZ.addActionListener(handler);        
-        rot.add(rotationTitle);
-        rot.add(rotAxisX);
-        rot.add(rotAxisY);
-        rot.add(rotAxisZ);
-        rot.add(rotAxisNegX);
-        rot.add(rotAxisNegY);
-        rot.add(rotAxisNegZ);
-        */
-        
-        
+        rot.add(rotationButFlow);
+           
         //INVERT Tab\\
         inv = new JPanel();
         inv.setLayout(new BoxLayout(inv, BoxLayout.Y_AXIS));
@@ -502,6 +477,18 @@ public class PrototypeApplet extends Applet
 
         currentMolecule = urlName0;
         currentMolLabel.setText("Current Molecule: "+currentMolecule);
+        
+        resetAxisSize();
+	}
+	
+	
+	//This will check the size of the current molecule and adjust the vectors to match.
+	public void resetAxisSize()
+	{
+		//axisRadius = (int) Math.ceil(view1.getRotationRadius());
+		axisRadius = view1.getRotationRadius();
+		axisEnd0 = new Vector3(axisRadius, 0, 0);
+		axisEnd1 = new Vector3(-axisRadius,0,0);
 	}
 	
 	//This code found at: http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
@@ -593,8 +580,7 @@ public class PrototypeApplet extends Applet
 					"try{" + //If the molecule fails to load an error dialogue box pops up...
 							"load \":"+currentMolecule+"\"" +
 					"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
-		        view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");       
-		        
+		        view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");      
 			}
 			
 			//Called if the ROTATE On/Off button is hit to spin both molecules.
@@ -727,51 +713,13 @@ public class PrototypeApplet extends Applet
 			//Called if the ROTATE Button is hit
             else if(e.getSource() == rotButton)
             {
-            	rotationAmount = 180;
+            	rotationAmount = 180; //need to change this so that it accepts from Nathan's drop-down
             	showAxis.setSelected(true);
 		    	axisShown=true;
-				
-				//1.  Rotate the molecule so that the axis we want to rotate around is aligned with 
-            	//  an axis that we can rotate around.  (We can use the xyz values from the 
-            	//  axis rotation...)
-            	//2.  Rotate the molecule the desired degrees.
-            	//3.  Rotate the molecule back to the original orientation.  
-            	
+						           	
             	view1.evalString(
-            		"set echo top left;"+
-            		"echo \"Rotating...\";"+
-            		"delay 5;"+
-            		"rotate $axis1 "+ rotationAmount+" 30;"+//30 is the angles/sec of the rotation
-            		"echo \"\";");
-            	
-            	/*
-            	switch (rotAxisValue) 
-				{
-					case -1:
-						JOptionPane.showMessageDialog(null, "Please select an axis to rotate around.");
-						break;
-					case 0:
-						view1.evalString("move "+rotationAmount+" 0 0 0 0 0 0 0 5;");
-						break;
-					case 1:
-						view1.evalString("move 0 "+rotationAmount+" 0 0 0 0 0 0 5;");
-						break;
-					case 2:
-						view1.evalString("move 0 0 "+rotationAmount+" 0 0 0 0 0 5;");
-						break;
-					case 3:
-						view1.evalString("move -"+rotationAmount+" 0 0 0 0 0 0 0 5;");
-						break;
-					case 4:
-						view1.evalString("move 0 -"+rotationAmount+" 0 0 0 0 0 0 5;");
-						break;
-					case 5:
-						view1.evalString("move 0 0 -"+rotationAmount+" 0 0 0 0 0 5;");
-						break;
-					default:
-						break;
-				}
-				*/
+            		"rotate $axis1 "+ rotationAmount+" 30;");//30 is the angles/sec of the rotation
+      
             }
 			
 			//Called if the REFLECT Button is hit.
@@ -911,9 +859,7 @@ public class PrototypeApplet extends Applet
 			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
 			{
 				
-				//Perhaps I can use this to set the axis radius...
-				view1.getRotationRadius();
-				
+								
 				
 				///////////Possible Useful Commands\\\\\\\\\\\\\\\
 				//view1.getModelSetPathName();  \\Gets the URL for the current molecule at pubchem...
