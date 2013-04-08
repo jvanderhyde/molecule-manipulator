@@ -148,7 +148,7 @@ public class PrototypeApplet extends Applet
 		
 		out.setEditable(false);
 		
-		/*
+		
 		try //Redirect System.out to run to our output box.
 		{
 			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
@@ -158,7 +158,7 @@ public class PrototypeApplet extends Applet
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
-		*/     
+		     
 		
 		//Calculate the appropriate size for jmolPanel		
 		int jmolWidth = this.getWidth()/3;
@@ -439,7 +439,7 @@ public class PrototypeApplet extends Applet
         controlButsFlow.add(reset1ButFlow);
         
         southCenterBorder.add(controlButsFlow, BorderLayout.NORTH);
-        southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
+        //southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
         
         JPanel scrollFlow = new JPanel();
         scrollFlow.setLayout(new FlowLayout());
