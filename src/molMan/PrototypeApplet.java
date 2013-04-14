@@ -3,6 +3,9 @@
  * 	- Add loading animation when loading new molecule.
  * 	- Add more control buttons beneath the JMol windows (Select All/None)
  * 	- Add Transformation animations
+ * 
+ * Rotate around a bond.
+ * Get camera rotation out of Jmol
  */
 
  
@@ -15,37 +18,30 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.io.PrintStream;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.util.BitSet;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.vecmath.Point3f;
+import javax.vecmath.Vector3d;
 
-import molMan.SimpleJmolExample.JmolPanel;
 import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
 import org.jmol.api.JmolSelectionListener;
-import org.jmol.api.JmolSimpleViewer;
 import org.jmol.api.JmolStatusListener;
-import org.jmol.api.JmolSyncInterface;
 import org.jmol.api.JmolViewer;
 import org.jmol.constant.EnumCallback;
-import org.jmol.i18n.GT;
-import org.jmol.util.Logger;
-import org.jmol.util.Parser;
-import org.jmol.util.TextFormat;
-import org.jmol.viewer.Viewer;
 
 //The applet code  
 public class PrototypeApplet extends Applet 
@@ -119,13 +115,15 @@ public class PrototypeApplet extends Applet
 	private boolean axisShown = false;
 
     protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
-    private String callbackString = new String("Nothing");
-    private MyJmolListener jListen0 = new MyJmolListener();
+    @SuppressWarnings("unused")
+	private String callbackString = new String("Nothing");
     private MyJmolListener jListen1 = new MyJmolListener();
     private boolean loadingMol0 = false;//These are both used to be able to tell when both Jmol windows are finished loading.
-    private boolean loadingMol1 = false;
-    String refPlane;
+    @SuppressWarnings("unused")
+	private boolean loadingMol1 = false;
+    private String refPlane;
     private MySelectionListener selectionListen0 = new MySelectionListener();
+    
     
     
 	public void init()
@@ -148,7 +146,7 @@ public class PrototypeApplet extends Applet
 		
 		out.setEditable(false);
 		
-		
+		/*
 		try //Redirect System.out to run to our output box.
 		{
 			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
@@ -158,7 +156,7 @@ public class PrototypeApplet extends Applet
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
-		     
+		*/     
 		
 		//Calculate the appropriate size for jmolPanel		
 		int jmolWidth = this.getWidth()/3;
@@ -176,11 +174,12 @@ public class PrototypeApplet extends Applet
 	public void loadStructure() 
 	{ 
         view0 = jmolPanel0.getViewer();
-        view0.setJmolStatusListener(jListen0);
+        //view0.setJmolStatusListener(jListen0);
         view1 = jmolPanel1.getViewer();
         
         view1.setJmolStatusListener(jListen1);
         view1.addSelectionListener(selectionListen0);
+        //perspCheck = new PerspectiveChecker(view0, view1, jListen1);
                       
         loadingMol0 = true;
         loadingMol1 = true;
@@ -276,7 +275,8 @@ public class PrototypeApplet extends Applet
         JLabel rotationTitle = new JLabel("ROTATION");
         rotationTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
         String[] rotString = {"Rotations","c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10"};
-        JComboBox rotBox = new JComboBox(rotString);
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+		JComboBox rotBox = new JComboBox(rotString);
         rotBox.setSelectedIndex(0);
         JPanel rotBoxPan = new JPanel(new FlowLayout());
         rotBoxPan.add(rotBox);
@@ -365,7 +365,8 @@ public class PrototypeApplet extends Applet
         rotAxisNegZ1.addActionListener(handler);   
         String[] rotRefString = {"Rotation & Reflection",
             "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"};
-        JComboBox rotRefBox = new JComboBox(rotRefString);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+		JComboBox rotRefBox = new JComboBox(rotRefString);
         rotBox.setSelectedIndex(0);
         JPanel rotRefBoxPan = new JPanel(new FlowLayout());
         rotRefBoxPan.add(rotRefBox);
@@ -453,13 +454,13 @@ public class PrototypeApplet extends Applet
         controlButsFlow.add(reset1ButFlow);
         
         southCenterBorder.add(controlButsFlow, BorderLayout.NORTH);
-        //southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
+        southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
         
         JPanel scrollFlow = new JPanel();
         scrollFlow.setLayout(new FlowLayout());
-        //scrollFlow.setLayout(new BoxLayout(scrollFlow, BoxLayout.Y_AXIS));
+        scrollFlow.setLayout(new BoxLayout(scrollFlow, BoxLayout.Y_AXIS));
         //scrollFlow.add(Box.createRigidArea(new Dimension(scrollFlow.getWidth(),200)));
-        //scrollFlow.setBounds(scrollFlow.getX(), scrollFlow.getY(), this.W/3-scrollFlow.getX(), this.H-scrollFlow.getY());
+        scrollFlow.setBounds(scrollFlow.getX(), scrollFlow.getY(), this.W/3-scrollFlow.getX(), this.H-scrollFlow.getY());
         scrollFlow.add(scrollPane);
         
         
@@ -623,8 +624,8 @@ public class PrototypeApplet extends Applet
 									
 				//This just sends one big segment of commands to jmol and lets it evaluate it...
 				view1.evalString(
-					"set echo top left;"+
-					"echo \"Inverting...\";"+
+					//"set echo top left;"+
+					//"echo \"Inverting...\";"+
 					
 					//We need arrays to store the original xyz locations and the change in x,y, and z
 					//Arrays for X
@@ -672,8 +673,8 @@ public class PrototypeApplet extends Applet
 							"translateSelected {@newXpos, @newYpos, @newZpos};"+
 						"}"+
 						"delay 0.025;"+  //Controls the fps (Essentially the time between frames)
-					"}"+
-					"echo \"\";"	
+					"}"
+					//"echo \"\";"	
 				);
 								
 				inverted = !inverted;
@@ -870,11 +871,23 @@ public class PrototypeApplet extends Applet
 			    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
             	else view1.evalString("draw axis1 DELETE");
             }
-			else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
+            else if(e.getSource() == next)
+            {
+            	//view1.evalString("show STATE;");
+            }
+            else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
 			{
 				
-								
+				/*
+				String stateCommand = messageText.substring(
+						messageText.indexOf("function _setPerspectiveState()"), 
+						messageText.indexOf("function _setSelectionState()")-1);
 				
+				System.out.println(stateCommand);
+				view0.evalString(stateCommand);
+				view0.evalString("_setPerspectiveState()");
+				*/
+
 				///////////Possible Useful Commands\\\\\\\\\\\\\\\
 				//view1.getModelSetPathName();  \\Gets the URL for the current molecule at pubchem...
 				//view1.isScriptExecuting()  //returns true if no script is executing...
@@ -899,12 +912,15 @@ public class PrototypeApplet extends Applet
 			}
 		}		
 	}
-	private class MyJmolListener implements JmolStatusListener
+	
+	public class MyJmolListener implements JmolStatusListener
 	{
-
+		public String echoText = "";
+		
 		@Override
 		public void notifyCallback(EnumCallback type, Object[] data) 
 		{
+			@SuppressWarnings("unused")
 			String callback = callbacks.get(type);
 			String strInfo = (data == null || data[1] == null ? null : data[1]
 			          .toString());
@@ -915,19 +931,81 @@ public class PrototypeApplet extends Applet
 					//System.out.println("Atom Moved...");
 					break;
 				case MESSAGE:
-					System.out.println(strInfo);
+					//System.out.println(strInfo);
+					
 					break;
 				case CLICK:
 			        // x, y, action, int[] {action}
 			        // the fourth parameter allows an application to change the action
 					callbackString = "x=" + data[1] + " y=" + data[2] + " action=" + data[3] + " clickCount=" + data[4];
 					
-					//view1.evalString("draw axis1 DELETE");
-	                //view1.evalString("draw axis1 \"x axis\" {4,0,0} {-4,0,0}");
 					
-					//JOptionPane.showMessageDialog(null, callbackString);
+					//This is where we handle the linking of perspectives for the jmol windows
+					//Every time there is a mouse event with view1 this will run.
+					view1.evalString("show STATE;");  //Get the current perspective
+					
+					if(echoText != "")  //Make sure the String has been updated
+					{
+						//First we need to get the exact command we need out of the state String.
+						String stateCommand = echoText.substring(
+								echoText.indexOf("function _setPerspectiveState()"), 
+								echoText.indexOf("function _setSelectionState()")-1);
+						stateCommand = stateCommand.substring(
+								stateCommand.indexOf("moveto 0.0"), 
+								stateCommand.indexOf("slab")); 
+
+						//then we just feed that command into view0
+						view0.evalString(stateCommand);
+						
+						//We also need to adjust the location of axis1
+						//Its rotation should be opposite to that of the molecule.  
+						//This method of vector rotation from http://www.blitzbasic.com/Community/posts.php?topic=57616
+						
+						//We need to pull the axis coords out of the String
+						
+						Scanner sc = new Scanner(stateCommand).useDelimiter("}");
+				    	String temp = "";
+				    	while(sc.hasNext()){ temp+= sc.next();}
+				    	   
+				    	sc = new Scanner(temp);
+				    	int counter = 0;
+				    	double[] vals = new double[5];
+				    	while(sc.hasNext() && counter<5)
+				    	{
+				    		if(sc.hasNextDouble())
+				    		{
+				    			vals[counter] = sc.nextDouble();
+				    			counter++;
+				    		}
+				    		else sc.next();				    		
+				    	}
+					   				
+						double u = vals[1];//sc.nextDouble();
+						double v = vals[2];//sc.nextDouble();
+						double w = vals[3];//sc.nextDouble();
+						double a = vals[4];//sc.nextDouble();
+						
+						double x = 4;
+						double y = 0;
+						double z = 0;
+						
+						RotationMatrix rotMat = new RotationMatrix(0, 0, 0, u, v, w, Math.toRadians(-a));
+						
+						double[] rotVector = rotMat.timesXYZ(x, y, z);
+						
+						axisEnd0.x = rotVector[0];
+						axisEnd0.y = rotVector[1];
+						axisEnd0.z = rotVector[2];		
+						
+						view1.evalString(
+					    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"} {0,0,0};");
+					}
+					
 					break; 
 				case ECHO:
+					
+					echoText = strInfo;
+
 					//JOptionPane.showMessageDialog(null, strInfo);
 					break;
 				case APPLETREADY:
@@ -1029,6 +1107,8 @@ public class PrototypeApplet extends Applet
 		public void showUrl(String arg0) {}	
 	}
 	
+		
+	
 	private class MySelectionListener implements JmolSelectionListener
 	{
 		@Override
@@ -1048,8 +1128,6 @@ public class PrototypeApplet extends Applet
 	{
 		public void stateChanged(ChangeEvent e) 
 		{
-		    JSlider source = (JSlider)e.getSource();
-		    
 		    //the XAXISSLIDER is being adjusted.
 		    if(e.getSource() == zAxisSlider)
 		    {
