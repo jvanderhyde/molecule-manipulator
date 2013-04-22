@@ -40,7 +40,7 @@ public class Vector3
         Vector3 r=new Vector3();
         r.x=u.y*v.z-u.z*v.y;
         r.y=u.z*v.x-u.x*v.z;
-        r.z=u.x*v.y-u.y*v.x;
+        r.z=u.x*v.y-u.y*v.x; 
         return r;
     }
     
