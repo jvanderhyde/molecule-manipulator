@@ -1,44 +1,17 @@
-/*
- * TODO:
- * 	- Add loading animation when loading new molecule.
- * 	- Add more control buttons beneath the JMol windows (Select All/None)
- * 	- Add Transformation animations
- * 
- * Rotate around a bond.
- * Get camera rotation out of Jmol
- */
-
- 
-
 package molMan;
 //Reference the required Java libraries
 import java.applet.Applet; 
 import java.awt.*; 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.AdjustmentEvent;
-import java.awt.event.AdjustmentListener;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.io.Reader;
-import java.util.BitSet;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.vecmath.Vector3d;
-
 import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
-import org.jmol.api.JmolSelectionListener;
 import org.jmol.api.JmolStatusListener;
 import org.jmol.api.JmolViewer;
 import org.jmol.constant.EnumCallback;
@@ -46,26 +19,25 @@ import org.jmol.constant.EnumCallback;
 //The applet code  
 public class PrototypeApplet extends Applet 
 {
-
+    ////////////GUI Components\\\\\\\\\\\\
 	private static final long serialVersionUID = 1L;	
 	private JmolPanel jmolPanel0;
 	private JmolPanel jmolPanel1;
-    private final int W = 1400;
-    private final int H = 800;
-    private JScrollPane scrollPane;
-    private String currentMolecule = "";
+	private JmolViewer view0;
+	private JmolViewer view1;
     private JTextField input = new JTextField(30);
+    private JTextField zAxisField = new JTextField("0", 2);
+    private JTextField xAxisField = new JTextField("0", 2);
+    private JTextField yAxisField = new JTextField("0", 2);
     private JLabel currentMolLabel = new JLabel("");
-    private JmolViewer view0;
-    private JmolViewer view1;
-    private JTextArea out;
-    private int rotAxisValue = -1; //0=x, 1=y, 2=z, 3=-x, 4=-y, 5=-z, -1=not selected
-    private int rotationAmount;
-     
-    ////////////STATE VARIABLES\\\\\\\\\\\\
-    private Boolean rotateOn = false;
-    private Boolean inverted = false;
-    private Boolean reflected = false;
+    private JLabel zAxisLabel = new JLabel("Z Axis Rotation: ");
+    private JLabel xAxisLabel = new JLabel("X Axis Rotation: ");
+    private JLabel yAxisLabel = new JLabel("Y Axis Rotation: ");
+	private JCheckBox showAxis = new JCheckBox("Show Axis");
+	private JCheckBox showPlane = new JCheckBox("Show Plane");
+    private JSlider zAxisSlider;
+    private JSlider xAxisSlider;
+    private JSlider yAxisSlider;
     
     ////////////BUTTONS\\\\\\\\\\\\
     private JButton selectButton = new JButton("Select");
@@ -76,91 +48,40 @@ public class PrototypeApplet extends Applet
     private JButton rotButton = new JButton("Rotate");
     private JButton rotRefButton = new JButton("Rotate & Invert");
     private JButton refButton = new JButton("Reflect");
-    private JRadioButton rotAxisX = new JRadioButton("X");
-    private JRadioButton rotAxisY = new JRadioButton("Y");
-    private JRadioButton rotAxisZ = new JRadioButton("Z");
-    private JRadioButton rotAxisNegX = new JRadioButton("-X");
-    private JRadioButton rotAxisNegY = new JRadioButton("-Y");
-    private JRadioButton rotAxisNegZ = new JRadioButton("-Z");
-    private JRadioButton rotAxisX1 = new JRadioButton("X");
-    private JRadioButton rotAxisY1 = new JRadioButton("Y");
-    private JRadioButton rotAxisZ1 = new JRadioButton("Z");
-    private JRadioButton rotAxisNegX1 = new JRadioButton("-X");
-    private JRadioButton rotAxisNegY1 = new JRadioButton("-Y");
-    private JRadioButton rotAxisNegZ1 = new JRadioButton("-Z");
-    private JRadioButton refX = new JRadioButton("X");
-    private JRadioButton refY = new JRadioButton("Y");
-    private JRadioButton refZ = new JRadioButton("Z");
     private JButton previous = new JButton("Previous");
-    private JButton next = new JButton("Next");
+    private JButton next = new JButton("Next");  
     
-    private JSlider zAxisSlider;
-    private JSlider xAxisSlider;
-    private JSlider yAxisSlider;
-    private MyChangeListener sliderListener = new MyChangeListener();
-    private JTextField zAxisField = new JTextField("0", 2);
-    private JTextField xAxisField = new JTextField("0", 2);
-    private JTextField yAxisField = new JTextField("0", 2);
-    private JLabel zAxisLabel = new JLabel("Z Axis Rotation: ");
-    private JLabel xAxisLabel = new JLabel("X Axis Rotation: ");
-    private JLabel yAxisLabel = new JLabel("Y Axis Rotation: ");
-    //These vectors are both halves of the real axis...
-    private float axisRadius = 5.539443f;  
-	private Vector3 axisEnd0 = new Vector3(axisRadius, 0, 0);
-	private Vector3 axisEnd1 = new Vector3(-axisRadius,0,0);
-	private int zAxisRot = 0;
-	private int xAxisRot = 0;
-	private int yAxisRot = 0;
-	private JCheckBox showAxis = new JCheckBox("Show Axis");
-	private JCheckBox showPlane = new JCheckBox("Show Plane");
+    ////////////STATE VARIABLES\\\\\\\\\\\\
+    private boolean rotateOn = false;
+    private boolean inverted = false;
+    private boolean reflected = false;
 	private boolean axisShown = false;
 	private boolean planeShown = false;
-
-    protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
-    @SuppressWarnings("unused")
-	private String callbackString = new String("Nothing");
-    private MyJmolListener jListen0 = new MyJmolListener();
-    private MyJmolListener jListen1 = new MyJmolListener();
-    private boolean loadingMol0 = false;//These are both used to be able to tell when both Jmol windows are finished loading.
+	private boolean loadingMol0 = false;//These are both used to be able to tell when both Jmol windows are finished loading.
     @SuppressWarnings("unused")
 	private boolean loadingMol1 = false;
-    private String refPlane;
-    private MySelectionListener selectionListen0 = new MySelectionListener();
-    
-    
+    private String currentMolecule = "";
+    @SuppressWarnings("unused")
+	private String callbackString = new String("Nothing");
+    private int rotationAmount;    
+    private final int W = 1400;
+    private final int H = 800;
+    private int zAxisRot = 0;
+	private int xAxisRot = 0;
+	private int yAxisRot = 0;
+    private float axisRadius = 5.539443f;
+    //These vectors are both halves of the real axis...      
+	private Vector3 axisEnd0 = new Vector3(axisRadius, 0, 0);
+	private Vector3 axisEnd1 = new Vector3(-axisRadius,0,0);
+    protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
+
+    ////////////LISTENERS\\\\\\\\\\\\    
+    private MyChangeListener sliderListener = new MyChangeListener();
+    private MyJmolListener jListen0 = new MyJmolListener();
+    private MyJmolListener jListen1 = new MyJmolListener();
     
 	public void init()
-	{	
-		//Setup the textarea for the system output to go to.
-                
-		out = new JTextArea(7,30);
-		scrollPane = new JScrollPane(out);
-		//Make the ScrollPane autoScroll when something is added.
-		//Found at : http://www.coderanch.com/t/329964/GUI/java/JScrollpane-Force-autoscroll-bottom
-		scrollPane.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener()
-		{
-			public void adjustmentValueChanged(AdjustmentEvent e)
-			{
-				//I think that the 1000 here means that it will be able to adjust the scroll
-				//  if the output is not more then 1000 lines input at a time...
-				out.select(out.getHeight()+1000,0);                                
-			}
-		});
-		
-		out.setEditable(false);
-		
-		/*
-		try //Redirect System.out to run to our output box.
-		{
-			PrintStream output = new PrintStream(new RedirectedOut(out), true, "UTF-8");
-			System.setOut(output);			
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} 
-		*/     
-		
+	{			
 		//Calculate the appropriate size for jmolPanel		
 		int jmolWidth = this.getWidth()/3;
 				
@@ -178,11 +99,8 @@ public class PrototypeApplet extends Applet
 	{ 
         view0 = jmolPanel0.getViewer();
         view0.setJmolStatusListener(jListen0);
-        view1 = jmolPanel1.getViewer();
-        
+        view1 = jmolPanel1.getViewer();        
         view1.setJmolStatusListener(jListen1);
-        view1.addSelectionListener(selectionListen0);
-        //perspCheck = new PerspectiveChecker(view0, view1, jListen1);
                       
         loadingMol0 = true;
         loadingMol1 = true;
@@ -353,19 +271,7 @@ public class PrototypeApplet extends Applet
         rotRefButFlow.add(rotRefButton);
         JLabel rotRefTitle = new JLabel("ROTATION & INVERSION");
         rotRefTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
-        ButtonGroup axis1 = new ButtonGroup();
-        axis1.add(rotAxisX1);
-        axis1.add(rotAxisY1);
-        axis1.add(rotAxisZ1);
-        axis1.add(rotAxisNegX1);
-        axis1.add(rotAxisNegY1);
-        axis1.add(rotAxisNegZ1);
-        rotAxisX1.addActionListener(handler);
-        rotAxisY1.addActionListener(handler);
-        rotAxisZ1.addActionListener(handler);
-        rotAxisNegX1.addActionListener(handler);
-        rotAxisNegY1.addActionListener(handler);
-        rotAxisNegZ1.addActionListener(handler);   
+        
         String[] rotRefString = {"Rotation & Reflection",
             "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"};
         @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -376,12 +282,6 @@ public class PrototypeApplet extends Applet
         
         rotRef.add(rotRefBoxPan);
         rotRef.add(rotRefTitle);
-        rotRef.add(rotAxisX1);
-        rotRef.add(rotAxisY1);
-        rotRef.add(rotAxisZ1);
-        rotRef.add(rotAxisNegX1);
-        rotRef.add(rotAxisNegY1);
-        rotRef.add(rotAxisNegZ1);
         rotRef.add(rotRefButFlow);
         
         //REFLECT Tab\\
@@ -397,20 +297,7 @@ public class PrototypeApplet extends Applet
         ref.add(reflectionTitle);
         ref.add(showPlane);
         ref.add(reflectionButFlow);
-        /*
-        ButtonGroup axis2 = new ButtonGroup();
-        axis2.add(refX);
-        axis2.add(refY);
-        axis2.add(refZ);
-        refX.addActionListener(handler);
-        refY.addActionListener(handler);
-        refZ.addActionListener(handler);  
-        ref.add(refX);
-        ref.add(refY);
-        ref.add(refZ);
-        */
-        
-        
+         
         
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab("Rotation", null, rot, "Rotate the molecule around an axis");
@@ -466,16 +353,9 @@ public class PrototypeApplet extends Applet
         southCenterBorder.add(controlButsFlow, BorderLayout.NORTH);
         southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
         
-        JPanel scrollFlow = new JPanel();
-        scrollFlow.setLayout(new FlowLayout());
-        scrollFlow.setLayout(new BoxLayout(scrollFlow, BoxLayout.Y_AXIS));
-        //scrollFlow.add(Box.createRigidArea(new Dimension(scrollFlow.getWidth(),200)));
-        scrollFlow.setBounds(scrollFlow.getX(), scrollFlow.getY(), this.W/3-scrollFlow.getX(), this.H-scrollFlow.getY());
-        scrollFlow.add(scrollPane);
-        
+
         
         //set up bottom layout
-        bottom.add(scrollFlow, BorderLayout.WEST);
         bottom.add(southCenterBorder, BorderLayout.CENTER);
         
         //adds each section to applet window
@@ -518,21 +398,14 @@ public class PrototypeApplet extends Applet
 		
 		orig = preliminaryRot.transform(orig);
 		
-		double x = orig.x;
-		double y = 0;
-		double z = orig.y;
-
-		
 		axisEnd0 = new Vector3(orig.x, 0, orig.y);
 		axisEnd1 = new Vector3(-orig.x,0,-orig.y);
 	}
 	
 	//This code found at: http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
 	static class JmolPanel extends JPanel 
-	{
-        
+	{        
         private static final long serialVersionUID = -3661941083797644242L;
-        //JmolSimpleViewer viewer;
         JmolViewer viewer;
         JmolAdapter adapter;
         JmolPanel() 
@@ -559,47 +432,10 @@ public class PrototypeApplet extends Applet
             getSize(currentSize);
             g.getClipBounds(rectClip);
             
-            ///viewer.renderScreenImage(g, currentSize, rectClip);
             viewer.renderScreenImage(g, rectClip.width, rectClip.height);
         }
     }
-	
-	private class RedirectedOut extends OutputStream 
-	{			
-		private PipedOutputStream out = new PipedOutputStream();
-		private Reader reader;
-		JTextArea txtArea;
 		
-		public RedirectedOut(JTextArea txtArea) throws IOException
-		{
-			PipedInputStream in = new PipedInputStream(out);
-			reader = new InputStreamReader(in, "UTF-8");
-			this.txtArea = txtArea;
-		}
-		
-		@Override
-		public void write(int i) throws IOException 
-		{
-			out.write(i);
-		}
-		public void write(byte[] bytes, int i, int i1) throws IOException 
-		{
-		    out.write(bytes, i, i1);
-		}
-		
-		public void flush() throws IOException
-		{
-			if(reader.ready())
-			{
-				char[] chars = new char[1024];
-				int n = reader.read(chars);
-				String txt = new String(chars, 0, n);
-				
-				txtArea.append(txt);
-			}
-		}
-	}
-	
 	private class ButtonListener implements ActionListener 
 	{
 		public void actionPerformed(ActionEvent e) 
@@ -706,44 +542,7 @@ public class PrototypeApplet extends Applet
 			{
 				rotationAmount = 180;
 				
-				switch (rotAxisValue) 
-				{
-					case -1:
-						JOptionPane.showMessageDialog(null, "Please select an axis to rotate around.");
-						break;
-					case 0:
-						view1.evalString("move "+rotationAmount+" 0 0 0 0 0 0 0 5;");
-	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
-	                                            inverted = !inverted;
-						break;
-					case 1:
-						view1.evalString("move 0 "+rotationAmount+" 0 0 0 0 0 0 5;");
-	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
-	                                            inverted = !inverted;
-						break;
-					case 2:
-						view1.evalString("move 0 0 "+rotationAmount+" 0 0 0 0 0 5;");
-	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
-	                                            inverted = !inverted;
-						break;
-					case 3:
-						view1.evalString("move -"+rotationAmount+" 0 0 0 0 0 0 0 5;");
-	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
-	                                            inverted = !inverted;
-						break;
-					case 4:
-						view1.evalString("move 0 -"+rotationAmount+" 0 0 0 0 0 0 5;");
-	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
-	                                            inverted = !inverted;
-						break;
-					case 5:
-						view1.evalString("move 0 0 -"+rotationAmount+" 0 0 0 0 0 5;");
-	                                            view1.evalString("select all; invertSelected POINT {0,0,0};");
-	                                            inverted = !inverted;
-						break;
-					default:
-						break;
-				}			
+				
 			}
 			
 			//Called if the ROTATE Button is hit
@@ -761,97 +560,80 @@ public class PrototypeApplet extends Applet
 			//Called if the REFLECT Button is hit.
             else if(e.getSource() == refButton)
             {
-            	
-            	//First lets get the angle that we will have to rotate to in order to move all the atoms 
-            	// Axis0{x,y,x} needs to rotate to {0, sqrt(x^2 + y^2 + z^2), 0).
-            	Vector2 v0 =  new Vector2(axisEnd0.x, axisEnd0.y);
-            	Vector2 v1 = new Vector2(0, Math.sqrt(axisEnd0.x*axisEnd0.x + axisEnd0.y*axisEnd0.y
-            			+ axisEnd0.z*axisEnd0.z));
-            	
-            	//Normalize both vectors.
-            	v0 = v0.normalized();
-            	v1 = v1.normalized();
-            	
-            	double xyAngle = Math.toDegrees(Math.acos(v0.dot(v1)));
-            	
-            	//Repeat for the yz plane
-            	v0 =  new Vector2(axisEnd0.y, axisEnd0.z);
-            	v1 = new Vector2(Math.sqrt(axisEnd0.x*axisEnd0.x + axisEnd0.y*axisEnd0.y
-            			+ axisEnd0.z*axisEnd0.z),0);
-            	
-            	//Normalize both vectors.
-            	v0 = v0.normalized();
-            	v1 = v1.normalized();
-            	
-            	double yzAngle = Math.toDegrees(Math.acos(v0.dot(v1)));
-            	//Now that we have the angles, we know that we need to rotate around the
-            	//  z axis by xyAngle degrees and the x axis by the yzAngle
+            	//First we need to get the rotation angles so that we can align the molecule
+            	//  with the y axis so that we just have to modify y-coordinates
+            	//	when we reflect.  
+            	//		Assuming your vector is (x,y,z):
+            	//			1. Rotate by alpha around the y-axis.
+            	//			2. Rotate by beta around the z-axis.
+            	double x = axisEnd0.x;
+            	double y = axisEnd0.y;
+            	double z = axisEnd0.z;
+            	double alpha = Math.toDegrees(Math.atan2(z, x));
+            	double r = Math.sqrt(x*x + y*y + z*z);
+            	double beta = Math.toDegrees(Math.acos(y/r));
+            	double negAlpha = -alpha;
+            	double negBeta = -beta;
             	
             	//Get the total number of atoms so we know what to loop through.
 				int numAtoms = view1.getAtomCount();
-				System.out.println("Atom Count = "+numAtoms);
+				//System.out.println("Atom Count = "+numAtoms);
 									
 				//This just sends one big segment of commands to jmol and lets it evaluate it...
 				view1.evalString(
-					//"set echo top left;"+
-					//"echo \"Inverting...\";"+
+			
+					//First align all the atoms to the y axis for measurements.
+					"select all;" +
+					"rotateSelected {0,0,0} {0,1,0} "+alpha+";" +
+					"rotateSelected {0,0,0} {0,0,1} "+beta+";"+
 					
-					//We need arrays to store the original xyz locations and the change in x,y, and z
-					//Arrays for X
-					"origX = ["+numAtoms+"];"+
-					"xChange = ["+numAtoms+"];"+
-					"for(i=1; i<"+numAtoms+"+1; i++)" +
-					"{"+
-						"origX[@i] = {atomno = i}.x;"+
-						"xChange[@i] = {atomno = i}.x / 100;"+
-					"}"+
-					
-					//Arrays for Y
-					"origY = ["+numAtoms+"];"+
-					"yChange = ["+numAtoms+"];"+
-					"for(i=1; i<"+numAtoms+"+1; i++)" +
+					//Take measurements and store them to arrays...
+					"origY = ["+numAtoms+"];"+ //Saves original location.
+					"yChange = ["+numAtoms+"];"+  //Saves the incremental change for the particular molecule.
+					"for(i=1; i<"+numAtoms+"+1; i++)" + //Loop through all of the molecules.
 					"{"+
 						"origY[@i] = {atomno = i}.y;"+
 						"yChange[@i] = {atomno = i}.y / 100;"+
 					"}"+
-					
-					//Arrays for Z
-					"origZ = ["+numAtoms+"];"+
-					"zChange = ["+numAtoms+"];"+
-					"for(i=1; i<"+numAtoms+"+1; i++)" +
-					"{"+
-						"origZ[@i] = {atomno = i}.z;"+
-						"zChange[@i] = {atomno = i}.z / 100;"+
-					"}"+
+											
+					//Reset the atoms alignment so we can begin the for loop...
+					"rotateSelected {0,0,0} {0,0,1} "+negBeta+";"+
+					"rotateSelected {0,0,0} {0,1,0} "+negAlpha+";"+
+															
 					
 					
 					//Basically animate the inversion.
 					"for(j=0; j<200; j++)"+ //j is the number of frames
-					"{"+
+					"{" +
+						//Align everything to the y axis so that we can translate along the y.
 						"select all;" +
-						"rotateSelected " +
+						"rotateSelected {0,0,0} {0,1,0} "+alpha+";" +
+						"rotateSelected {0,0,0} {0,0,1} "+beta+";"+
+						
+						//For each atom we are going to move it by an increment.  
 						"for(i=1; i<"+numAtoms+"+1; i++)" +
 						"{" +
 							//Select the next atom
 							"select none;" +
 							"select (*)[i];" +
-																			
+							
 							//Get the position change that will have to be made each iteration							
-							"newXpos = -xChange[@i];"+
+							"newXpos = 0;"+
 							"newYpos = -yChange[@i];"+
-							"newZpos = -zChange[@i];"+
+							"newZpos = 0;"+
 						
 							"translateSelected {@newXpos, @newYpos, @newZpos};"+
 						"}"+
+						
+						//Reorient the atom before the delay so that the molecule looks like it is in the right place.
+						"select all;" +
+						"rotateSelected {0,0,0} {0,0,1} "+negBeta+";"+
+						"rotateSelected {0,0,0} {0,1,0} "+negAlpha+";"+
+						
 						"delay 0.025;"+  //Controls the fps (Essentially the time between frames)
 					"}"
 					//"echo \"\";"	
 				);
-            	
-            	
-            	/*
-                view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
-                */
                 reflected = !reflected;
             }
 			
@@ -870,7 +652,7 @@ public class PrototypeApplet extends Applet
 				if(inverted && reflected) 
 				{
 					view1.evalString("select all; invertSelected POINT {0,0,0};");
-                                        view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
+                                        //view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
 					inverted = !inverted;
                     reflected = !reflected;
                 }
@@ -881,7 +663,7 @@ public class PrototypeApplet extends Applet
                 }
                 else if (reflected && !inverted)
                 {
-                    view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
+                    //view1.evalString("select all; invertSelected PLANE \""+refPlane+"\";");
                     reflected = !reflected;
                 }
                 
@@ -898,71 +680,7 @@ public class PrototypeApplet extends Applet
 					showAxis.setSelected(false);
 					axisShown = false;
 				}
-				
-				
 			}
-			
-			//Called if 
-			else if((e.getSource() == rotAxisX)||(e.getSource() == rotAxisX1))
-            {
-                rotAxisValue = 0;
-                
-                //First delete any drawn axis, then draw the right one...
-                view1.evalString("draw axis1 DELETE");
-                view1.evalString("draw axis1 \"x axis\" {4,0,0} {-4,0,0}");
-            }
-			else if((e.getSource() == rotAxisY)||(e.getSource() == rotAxisY1))
-	        {
-	            rotAxisValue = 1;
-	            
-	            //First delete any drawn axis, then draw the right one...
-	            view1.evalString("draw axis1 DELETE");
-                view1.evalString("draw axis1 \"y axis\" {0,4,0} {0,-4,0}");
-	        }
-			else if((e.getSource() == rotAxisZ)||(e.getSource() == rotAxisZ1))
-            {
-                rotAxisValue = 2;
-                
-                //First delete any drawn axis, then draw the right one...
-	            view1.evalString("draw axis1 DELETE");
-                view1.evalString("draw axis1 \"z axis\" {0,0,4} {0,0,-4}");
-            }
-			else if((e.getSource() == rotAxisNegX)||(e.getSource() == rotAxisNegX1))
-            {
-                rotAxisValue = 3;
-
-                //First delete any drawn axis, then draw the right one...
-                view1.evalString("draw axis1 DELETE");
-                view1.evalString("draw axis1 \"-x axis\" {-4,0,0} {4,0,0}");
-            }
-			else if((e.getSource() == rotAxisNegY)||(e.getSource() == rotAxisNegY1))
-            {
-                rotAxisValue = 4;
-                
-	            //First delete any drawn axis, then draw the right one...
-	            view1.evalString("draw axis1 DELETE");
-                view1.evalString("draw axis1 \"-y axis\" {0,-4,0} {0,4,0}");
-            }
-			else if((e.getSource() == rotAxisNegZ)||(e.getSource() == rotAxisNegZ1))
-            {
-                rotAxisValue = 5;
-
-                //First delete any drawn axis, then draw the right one...
-	            view1.evalString("draw axis1 DELETE");
-                view1.evalString("draw axis1 \"-z axis\" {0,0,-4} {0,0,4}");
-            }
-            else if(e.getSource() == refX)
-            {
-                refPlane = "yz";
-            }
-            else if(e.getSource() == refY)
-            {
-                refPlane = "xz";
-            }
-            else if(e.getSource() == refZ)
-            {
-                refPlane = "xy";
-            }
             else if(e.getSource() == zAxisField)
             {
             	zAxisSlider.setValue(Integer.parseInt(zAxisField.getText()));
@@ -985,9 +703,13 @@ public class PrototypeApplet extends Applet
             else if(e.getSource() == showPlane)
             {
             	planeShown = !planeShown;
+            	
+            	int scale = (int)Math.ceil(axisRadius * 180.5);
+            	
             	if(planeShown == true) view1.evalString(
 			    		"draw circle {0,0,0} {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"} "+
-	    				"SCALE 1000;");
+	    				"SCALE "+scale+" translucent;");
+            	//TODO need to make the scale of 1000 adjust depending on 
             	else view1.evalString("draw circle DELETE");
             }
             else if(e.getSource() == next)
@@ -995,151 +717,10 @@ public class PrototypeApplet extends Applet
             	//view1.evalString("show STATE;");
             }
             else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
-			{
-            	
-            	//Get the total number of atoms so we know what to loop through.
-				int numAtoms = view1.getAtomCount();
-				System.out.println("Atom Count = "+numAtoms);
-									
-				//This just sends one big segment of commands to jmol and lets it evaluate it...
-				view1.evalString(
-					//"set echo top left;"+
-					//"echo \"Inverting...\";"+
-					
-					//We need arrays to store the original xyz locations and the change in x,y, and z
-					//Arrays for X
-					"origX = ["+numAtoms+"];"+
-					"xChange = ["+numAtoms+"];"+
-					"for(i=1; i<"+numAtoms+"+1; i++)" +
-					"{"+
-						"origX[@i] = {atomno = i}.x;"+
-						"xChange[@i] = {atomno = i}.x / 100;"+
-					"}"+
-					
-					//Arrays for Y
-					"origY = ["+numAtoms+"];"+
-					"yChange = ["+numAtoms+"];"+
-					"for(i=1; i<"+numAtoms+"+1; i++)" +
-					"{"+
-						"origY[@i] = {atomno = i}.y;"+
-						"yChange[@i] = {atomno = i}.y / 100;"+
-					"}"+
-					
-					//Arrays for Z
-					"origZ = ["+numAtoms+"];"+
-					"zChange = ["+numAtoms+"];"+
-					"for(i=1; i<"+numAtoms+"+1; i++)" +
-					"{"+
-						"origZ[@i] = {atomno = i}.z;"+
-						"zChange[@i] = {atomno = i}.z / 100;"+
-					"}"+
-					
-					
-					//Basically animate the inversion.
-					"for(j=0; j<200; j++)"+ //j is the number of frames
-					"{"+
-						"for(i=1; i<"+numAtoms+"+1; i++)" +
-						"{" +
-							//Select the next atom
-							"select none;" +
-							"select (*)[i];" +
-																			
-							//Get the position change that will have to be made each iteration							
-							"newXpos = 0;"+
-							"newYpos = -yChange[@i];"+
-							"newZpos = 0;"+
-						
-							"translateSelected {@newXpos, @newYpos, @newZpos};"+
-						"}"+
-						"delay 0.025;"+  //Controls the fps (Essentially the time between frames)
-					"}"
-					//"echo \"\";"	
-				);
+			{            	
             	
             	
-            	
-            	
-            	
-            	
-            	/*
-            	Vector3 A = Vector3.cross(axisEnd0, new Vector3(0,1,0));
-            	double sinAngle = Math.sqrt(A.x*A.x +A.y*A.y + A.z*A.z)/
-            			(axisEnd0.x*axisEnd0.x + axisEnd0.y*axisEnd0.y + axisEnd0.z*axisEnd0.z);
-            	
-            	double angle = Math.toDegrees(Math.asin(sinAngle));
-            	
-            	view1.evalString(
-            			"rotate {"+A.x+","+A.y+","+A.z+"} {0,0,0} "+angle+" 30");
-            	*/
-            	
-            	
-            	
-            	
-            	
-            	
-            	
-            	/*
-            	double xyLength = Math.sqrt(axisEnd0.x*axisEnd0.x + axisEnd0.y*axisEnd0.y);
-            	double zAngle = Math.toDegrees(Math.acos(axisEnd0.y / xyLength));
-            	
-            	double vecLength = Math.sqrt(axisEnd0.x*axisEnd0.x + axisEnd0.y*axisEnd0.y + 
-            			axisEnd0.z*axisEnd0.z);
-            	double xAngle = Math.toDegrees(Math.acos(xyLength / vecLength));
-            	
-            	
-            	//I think we are getting some probs because some of the rotations need to be negative
-            	if(axisEnd0.x < 0 && axisEnd0.z < 0)
-            	{
-            		zAngle = -zAngle;
-            		xAngle = -xAngle;
-            	}
-            	else if(axisEnd0.x > 0) xAngle = -xAngle;
-            	else if(axisEnd0.z > 0) zAngle = -zAngle;
-            	
-
-            	System.out.println("x = "+axisEnd0.x+" y = "+ axisEnd0.y+" z = "+axisEnd0.z);
-            	System.out.println("xyLength = "+xyLength+" vecLength = "+vecLength);
-            	System.out.println("zAngle = "+zAngle+" xAngle = "+xAngle);
-            	
-            	view1.evalString(
-            			"select all;" +
-            			"move "+ xAngle+" 0 0 0 0 0 0 0 3;" +
-            			"move 0 0 "+ zAngle+" 0 0 0 0 0 3;");
-            	
-            	
-            	//First lets get the angle that we will have to rotate to in order to move all the atoms 
-            	// Axis0{x,y,x} needs to rotate to {0, sqrt(x^2 + y^2 + z^2), 0).
-            	Vector2 v0 =  new Vector2(axisEnd0.x, axisEnd0.y);
-            	Vector2 v1 = new Vector2(0, Math.sqrt(axisEnd0.x*axisEnd0.x + axisEnd0.y*axisEnd0.y
-            			+ axisEnd0.z*axisEnd0.z));
-            	
-            	//Normalize both vectors.
-            	v0 = v0.normalized();
-            	v1 = v1.normalized();
-            	
-            	double xyAngle = Math.toDegrees(Math.atan2(v1.y, v1.x) - Math.atan2(v0.y, v0.x));
-            	
-            	//Repeat for the zy plane
-            	v0 =  new Vector2(axisEnd0.z, axisEnd0.y);
-            	v1 = new Vector2(0, Math.sqrt(axisEnd0.x*axisEnd0.x + axisEnd0.y*axisEnd0.y
-            			+ axisEnd0.z*axisEnd0.z));
-            	
-            	//Normalize both vectors.
-            	v0 = v0.normalized();
-            	v1 = v1.normalized();
-            	
-            	double zyAngle = Math.toDegrees(Math.atan2(v1.y, v1.x) - Math.atan2(v0.y, v0.x));
-            	//Now that we have the angles, we know that we need to rotate around the
-            	//  z axis by xyAngle degrees and the x axis by the yzAngle
-            	
-            	System.out.println("xyAngle = "+ xyAngle+", yzAngle = "+zyAngle);
-            	
-            	view1.evalString(
-            			"select all;" +
-            			"rotateSelected z "+ xyAngle+";"+
-            			"delay 1;" +
-            			"rotateSelected x "+ -zyAngle+";");
-            	*/
+            
 
 				///////////Possible Useful Commands\\\\\\\\\\\\\\\
 				//view1.getModelSetPathName();  \\Gets the URL for the current molecule at pubchem...
@@ -1243,7 +824,6 @@ public class PrototypeApplet extends Applet
 						double a = vals[4];
 						
 						//Sets the original location of the drawn axis.
-						//TODO fix this so the axis length is variable.
 						//We cannot just set these values, because then we cannot control the length of the
 						//  axis depending on the size of the molecule.  We will load the axis as usual and
 						//  then rotate it where we want it.  
@@ -1279,9 +859,10 @@ public class PrototypeApplet extends Applet
 						}
 						if(planeShown)
 						{
+							int scale = (int)Math.ceil(axisRadius * 180.5);
 							view1.evalString(
 						    		"draw circle {0,0,0} {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"} "+
-						    				"SCALE 1000;");
+						    				"SCALE "+scale+" color translucent;");
 						}
 						
 					}
@@ -1390,19 +971,6 @@ public class PrototypeApplet extends Applet
 
 		@Override
 		public void showUrl(String arg0) {}	
-	}
-	
-		
-	
-	private class MySelectionListener implements JmolSelectionListener
-	{
-		@Override
-		public void selectionChanged(BitSet arg0) 
-		{
-			//System.out.println("Selection Changed");
-			
-		}
-		
 	}
 	
 	/*
@@ -1523,19 +1091,7 @@ public class PrototypeApplet extends Applet
 		    		//"draw axis1 DELETE;" + //Erase old axis and then draw new one.
 		    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
 			    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
-		    	
 		    }
-
-		    /*
-		    if (!source.getValueIsAdjusting()) 
-		    {
-		        
-		    } 
-		    else 
-		    {
-		    	
-		    }
-		    */
 		 }
 	}
 } 
