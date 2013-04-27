@@ -93,6 +93,13 @@ public class PrototypeApplet extends Applet
     private JRadioButton refZ = new JRadioButton("Z");
     private JButton previous = new JButton("Previous");
     private JButton next = new JButton("Next");
+    private String[] rotRefString = {"Rotation & Reflection",
+            "s1: 360̊", "s2: 180̊", "s3: 120̊", "s4: 90̊", "s5: 72̊", "s6: 60̊",
+            "s7: 51̊", "s8: 45̊", "s9: 40̊", "s10: 36̊"};
+    private JComboBox rotRefBox = new JComboBox(rotRefString);
+    private String[] rotString = {"Rotations","c1: 360̊", "c2: 180̊", "c3: 120̊",
+        "c4: 90̊", "c5: 72̊", "c6: 60̊", "c7: 51̊", "c8: 45̊", "c9: 40̊", "c10: 36̊"};
+    private JComboBox rotBox = new JComboBox(rotString);
     
     private JSlider zAxisSlider;
     private JSlider xAxisSlider;
@@ -277,11 +284,9 @@ public class PrototypeApplet extends Applet
         rotationButFlow.add(rotButton);
         JLabel rotationTitle = new JLabel("ROTATION");
         rotationTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
-        String[] rotString = {"Rotations","c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10"};
         @SuppressWarnings({ "unchecked", "rawtypes" })
-		JComboBox rotBox = new JComboBox(rotString);
-        rotBox.setSelectedIndex(0);
         JPanel rotBoxPan = new JPanel(new FlowLayout());
+        rotBox.setSelectedIndex(0);
         rotBoxPan.add(rotBox);
         
         rot.add(rotBoxPan);
@@ -289,8 +294,7 @@ public class PrototypeApplet extends Applet
         showAxis.addActionListener(handler);
         
         zAxisSlider = new JSlider(JSlider.HORIZONTAL, -90, 90,0);
-        zAxisSlider.addChangeListener(sliderListener);
-        
+        zAxisSlider.addChangeListener(sliderListener);  
         xAxisSlider = new JSlider(JSlider.HORIZONTAL, -90, 90, 0);
         xAxisSlider.addChangeListener(sliderListener);
         
@@ -366,13 +370,12 @@ public class PrototypeApplet extends Applet
         rotAxisNegX1.addActionListener(handler);
         rotAxisNegY1.addActionListener(handler);
         rotAxisNegZ1.addActionListener(handler);   
-        String[] rotRefString = {"Rotation & Reflection",
-            "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"};
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-		JComboBox rotRefBox = new JComboBox(rotRefString);
-        rotBox.setSelectedIndex(0);
+        
+        @SuppressWarnings({ "rawtypes", "unchecked" })	
         JPanel rotRefBoxPan = new JPanel(new FlowLayout());
+        rotRefBox.setSelectedIndex(0);
         rotRefBoxPan.add(rotRefBox);
+        
         
         rotRef.add(rotRefBoxPan);
         rotRef.add(rotRefTitle);
@@ -704,7 +707,44 @@ public class PrototypeApplet extends Applet
 			//Called if the ROTATE and REFLECT button is hit.
 			else if(e.getSource() == rotRefButton)
 			{
-				rotationAmount = 180;
+                                rotationAmount = 0;
+                                switch(rotRefBox.getSelectedIndex())
+                                {
+                                    case 0:
+                                            JOptionPane.showMessageDialog(null, "Please select a rotation.");
+                                            break;
+                                    case 1:
+                                            rotationAmount = 360;
+                                            break;
+                                    case 2:
+                                            rotationAmount = 180;
+                                            break;
+                                    case 3:
+                                            rotationAmount = 120;
+                                            break;
+                                    case 4:
+                                            rotationAmount = 90;
+                                            break;
+                                    case 5:
+                                            rotationAmount = 72;
+                                            break;
+                                    case 6:
+                                            rotationAmount = 60;
+                                            break;
+                                    case 7:
+                                            rotationAmount = 51;
+                                            break;
+                                    case 8:
+                                            rotationAmount = 45;
+                                            break;
+                                    case 9:
+                                            rotationAmount = 40;
+                                            break;
+                                    case 10:
+                                            rotationAmount = 36;
+                                            break;
+                                }
+
 				
 				switch (rotAxisValue) 
 				{
@@ -750,7 +790,44 @@ public class PrototypeApplet extends Applet
             else if(e.getSource() == rotButton)
             {
             	//TODO change this so that it accepts from Nathan's drop-down
-            	rotationAmount = 180;
+            	rotationAmount = 0;
+                        switch(rotBox.getSelectedIndex())
+                        {
+                            case 0:
+                                    JOptionPane.showMessageDialog(null, "Please select a rotation.");
+                                    break;
+                            case 1:
+                                    rotationAmount = 360;
+                                    break;
+                            case 2:
+                                    rotationAmount = 180;
+                                    break;
+                            case 3:
+                                    rotationAmount = 120;
+                                    break;
+                            case 4:
+                                    rotationAmount = 90;
+                                    break;
+                            case 5:
+                                    rotationAmount = 72;
+                                    break;
+                            case 6:
+                                    rotationAmount = 60;
+                                    break;
+                            case 7:
+                                    rotationAmount = 51;
+                                    break;
+                            case 8:
+                                    rotationAmount = 45;
+                                    break;
+                            case 9:
+                                    rotationAmount = 40;
+                                    break;
+                            case 10:
+                                    rotationAmount = 36;
+                                    break;
+                        }
+                        
 						           	
             	view1.evalString(
             		"select all;" +
