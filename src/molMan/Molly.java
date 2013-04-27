@@ -40,7 +40,7 @@ import org.jmol.api.JmolViewer;
 import org.jmol.constant.EnumCallback;
 
 //The applet code  
-public class PrototypeApplet extends Applet 
+public class Molly extends Applet 
 {
     ////////////GUI Components\\\\\\\\\\\\
 	private static final long serialVersionUID = 1L;	
