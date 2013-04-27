@@ -23,6 +23,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTabbedPane;
@@ -108,6 +109,18 @@ public class PrototypeApplet extends Applet
     private MyChangeListener sliderListener = new MyChangeListener();
     private MyJmolListener jListen0 = new MyJmolListener();
     private MyJmolListener jListen1 = new MyJmolListener();
+    
+    
+    
+    private String[] rotRefString = {"Rotation & Reflection",
+            "s1: 360̊", "s2: 180̊", "s3: 120̊", "s4: 90̊", "s5: 72̊", "s6: 60̊",
+            "s7: 51̊", "s8: 45̊", "s9: 40̊", "s10: 36̊"};
+    private JComboBox rotRefBox = new JComboBox(rotRefString);
+    private String[] rotString = {"Rotations","c1: 360̊", "c2: 180̊", "c3: 120̊",
+        "c4: 90̊", "c5: 72̊", "c6: 60̊", "c7: 51̊", "c8: 45̊", "c9: 40̊", "c10: 36̊"};
+    private JComboBox rotBox = new JComboBox(rotString);
+    
+    
     
 	public void init()
 	{			
@@ -224,9 +237,6 @@ public class PrototypeApplet extends Applet
         rotationButFlow.add(rotButton);
         JLabel rotationTitle = new JLabel("ROTATION");
         rotationTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
-        String[] rotString = {"Rotations","c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10"};
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-		JComboBox rotBox = new JComboBox(rotString);
         rotBox.setSelectedIndex(0);
         JPanel rotBoxPan = new JPanel(new FlowLayout());
         rotBoxPan.add(rotBox);
@@ -265,10 +275,7 @@ public class PrototypeApplet extends Applet
         JLabel rotRefTitle = new JLabel("ROTATION & INVERSION");
         rotRefTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
         
-        String[] rotRefString = {"Rotation & Reflection",
-            "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"};
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-		JComboBox rotRefBox = new JComboBox(rotRefString);
+		rotRefBox = new JComboBox(rotRefString);
         rotBox.setSelectedIndex(0);
         JPanel rotRefBoxPan = new JPanel(new FlowLayout());
         rotRefBoxPan.add(rotRefBox);
@@ -589,12 +596,45 @@ public class PrototypeApplet extends Applet
 			//Called if the ROTATE and REFLECT button is hit.
 			else if(e.getSource() == rotRefButton)
 			{
-				//TODO change this so that it accepts from Nathan's drop-down
-            	rotationAmount = 180;
-						           	
-            	view1.evalString(
-            		"select all;" +
-            		"rotateSelected $axis1 "+ rotationAmount+" 30;");//30 is the angles/sec of the rotation
+				       	
+            	rotationAmount = 0;
+                switch(rotRefBox.getSelectedIndex())
+                {
+                    case 0:
+                            JOptionPane.showMessageDialog(null, "Please select a rotation.");
+                            break;
+                    case 1:
+                            rotationAmount = 360;
+                            break;
+                    case 2:
+                            rotationAmount = 180;
+                            break;
+                    case 3:
+                            rotationAmount = 120;
+                            break;
+                    case 4:
+                            rotationAmount = 90;
+                            break;
+                    case 5:
+                            rotationAmount = 72;
+                            break;
+                    case 6:
+                            rotationAmount = 60;
+                            break;
+                    case 7:
+                            rotationAmount = 51;
+                            break;
+                    case 8:
+                            rotationAmount = 45;
+                            break;
+                    case 9:
+                            rotationAmount = 40;
+                            break;
+                    case 10:
+                            rotationAmount = 36;
+                            break;
+                }
+            	           	
       
                	//First we need to get the rotation angles so that we can align the molecule
             	//  with the y axis so that we just have to modify y-coordinates
@@ -620,6 +660,8 @@ public class PrototypeApplet extends Applet
 			
 					//First align all the atoms to the y axis for measurements.
 					"select all;" +
+					"rotateSelected $axis1 "+ rotationAmount+" 30;"+
+					
 					"rotateSelected {0,0,0} {0,1,0} "+alpha+";" +
 					"rotateSelected {0,0,0} {0,0,1} "+beta+";"+
 					
@@ -676,9 +718,44 @@ public class PrototypeApplet extends Applet
 			//Called if the ROTATE Button is hit
             else if(e.getSource() == rotButton)
             {
-            	//TODO change this so that it accepts from Nathan's drop-down
-            	rotationAmount = 180;
-						           	
+            	rotationAmount = 0;
+                switch(rotBox.getSelectedIndex())
+                {
+                    case 0:
+                            JOptionPane.showMessageDialog(null, "Please select a rotation.");
+                            break;
+                    case 1:
+                            rotationAmount = 360;
+                            break;
+                    case 2:
+                            rotationAmount = 180;
+                            break;
+                    case 3:
+                            rotationAmount = 120;
+                            break;
+                    case 4:
+                            rotationAmount = 90;
+                            break;
+                    case 5:
+                            rotationAmount = 72;
+                            break;
+                    case 6:
+                            rotationAmount = 60;
+                            break;
+                    case 7:
+                            rotationAmount = 51;
+                            break;
+                    case 8:
+                            rotationAmount = 45;
+                            break;
+                    case 9:
+                            rotationAmount = 40;
+                            break;
+                    case 10:
+                            rotationAmount = 36;
+                            break;
+                }
+                					           	
             	view1.evalString(
             		"select all;" +
             		"rotateSelected $axis1 "+ rotationAmount+" 30;");//30 is the angles/sec of the rotation
@@ -830,8 +907,6 @@ public class PrototypeApplet extends Applet
             {
             	//We need to align the axis1 to the x axis of the molecule, then rotate the 
             	//  perspective so that it looks like the axis did not move.  
-            	
-            	
             	
             }
             else if(e.getSource() == yAlignAxis)
