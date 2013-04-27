@@ -15,7 +15,6 @@ import java.awt.event.ActionListener;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Scanner;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -31,8 +30,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-
-import org.jmol.adapter.readers.molxyz.MolReader;
 import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
 import org.jmol.api.JmolStatusListener;
@@ -98,7 +95,7 @@ public class Molly extends Applet
     private float axisRadius = 5.539443f;
     //These vectors are both halves of the real axis...      
 	private Vector3 axisEnd0 = new Vector3(axisRadius, 0, 0);
-	private Vector3 axisEnd1 = new Vector3(-axisRadius,0,0);
+	//private Vector3 axisEnd1 = new Vector3(-axisRadius,0,0);
     protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
     double uPerspective = 0;
 	double vPerspective = 0;
@@ -324,20 +321,29 @@ public class Molly extends Applet
         JPanel axisOptionsGroup = new JPanel(new BorderLayout());
         
         JPanel axisRotSlidersBoxPanel = new JPanel();
-        axisRotSlidersBoxPanel.setLayout(new BoxLayout(axisRotSlidersBoxPanel, BoxLayout.Y_AXIS));
+        	axisRotSlidersBoxPanel.setLayout(new BoxLayout(axisRotSlidersBoxPanel, BoxLayout.Y_AXIS));
         
-        axisRotSlider = new JSlider(JSlider.HORIZONTAL, -90, 90, 0);
-        axisRotSlider.addChangeListener(sliderListener);
+        	axisRotSlider = new JSlider(JSlider.HORIZONTAL, -90, 90, 0);
+        	axisRotSlider.addChangeListener(sliderListener);
         
       
-        JPanel yAxisRotFlow = new JPanel(new FlowLayout());
-        yAxisRotFlow.add(axisRotLabel);
-        yAxisRotFlow.add(axisRotField);
-        axisRotField.addActionListener(handler);
-        yAlignAxis.addActionListener(handler);
-        axisRotSlidersBoxPanel.add(yAlignAxis);
-        axisRotSlidersBoxPanel.add(axisRotSlider);
+	        JPanel yAxisRotFlow = new JPanel(new FlowLayout());
+	        	axisRotField.addActionListener(handler);
+	        yAxisRotFlow.add(axisRotLabel);
+	        yAxisRotFlow.add(axisRotField);
+	        
+	        JPanel alignmentButsFlow = new JPanel(new FlowLayout());
+	        	yAlignAxis.addActionListener(handler);
+	        	xAlignAxis.addActionListener(handler);
+	        	zAlignAxis.addActionListener(handler);
+	        alignmentButsFlow.add(xAlignAxis);
+	        alignmentButsFlow.add(yAlignAxis);
+	        alignmentButsFlow.add(zAlignAxis);
+	        	
+        axisRotSlidersBoxPanel.add(alignmentButsFlow);
         axisRotSlidersBoxPanel.add(yAxisRotFlow);
+        axisRotSlidersBoxPanel.add(axisRotSlider);
+        
        
         
         JPanel axisRotChecksBoxPanel = new JPanel();
@@ -359,8 +365,6 @@ public class Molly extends Applet
         //////////VIEW OPTIONS GROUP\\\\\\\\\\\ 
         JPanel southCenterBorder = new JPanel();
         southCenterBorder.setLayout(new BorderLayout());
-        
-        	
         
         	JPanel controlButsFlow = new JPanel(new BorderLayout());
         	
@@ -455,7 +459,22 @@ public class Molly extends Applet
 		orig = preliminaryRot.transform(orig);
 		
 		axisEnd0 = new Vector3(orig.x, 0, orig.y);
-		axisEnd1 = new Vector3(-orig.x,0,-orig.y);
+		//axisEnd1 = new Vector3(-orig.x,0,-orig.y);
+	}
+	public void drawAxis()
+	{
+		view1.evalString(
+	    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
+		    		" {"+-axisEnd0.x+","+-axisEnd0.y+","+-axisEnd0.z+"};");
+	}
+	
+	public void drawCircle()
+	{
+		int scale = (int)Math.ceil(axisRadius * 180.5);
+    	
+    	view1.evalString(
+	    		"draw circle1 CIRCLE {0,0,0} {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"} "+
+				"SCALE "+scale+" translucent [102,155,255];");
 	}
 	
 	//This code found at: http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
@@ -883,13 +902,36 @@ public class Molly extends Applet
             else if(e.getSource() == perspectiveLinkBox)
             {
             	perspectiveLink = !perspectiveLink;
+            	
+            	//If this is turning the perspective link on, then we will go ahead and adjust view0.
+            	if(perspectiveLink)
+            	{
+            		//This is where we handle the linking of perspectives for the jmol windows
+					//Every time there is a mouse event with view1 this will run.
+					view1.evalString("show STATE;");  //Get the current perspective
+					
+					if(jListen1.echoText != "")  //Make sure the String has been updated
+					{
+						//First we need to get the exact command we need out of the state String.
+						String stateCommand = jListen1.echoText.substring(
+								jListen1.echoText.indexOf("function _setPerspectiveState()"), 
+								jListen1.echoText.indexOf("function _setSelectionState()")-1);
+						stateCommand = stateCommand.substring(
+								stateCommand.indexOf("moveto 0.0"), 
+								stateCommand.indexOf("slab")); 
+
+						//then we just feed that command into view0
+						view0.evalString(stateCommand);
+					
+					}
+            	}
+            	
             }
 			
             else if(e.getSource() == showAxis)
             {
             	axisShown = !axisShown;
-            	if(axisShown == true) view1.evalString("draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
-			    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
+            	if(axisShown == true) drawAxis();
             	else view1.evalString("draw axis1 DELETE");
             }
             else if(e.getSource() == showPlane)
@@ -898,55 +940,65 @@ public class Molly extends Applet
             	
             	int scale = (int)Math.ceil(axisRadius * 180.5);
             	
-            	if(planeShown == true) view1.evalString(
-			    		"draw circle {0,0,0} {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"} "+
-	    				"SCALE "+scale+" translucent;");
+            	if(planeShown == true) drawCircle();
             	else view1.evalString("draw circle DELETE");
             }
             else if(e.getSource() == xAlignAxis)
             {
-            	//We need to align the axis1 to the x axis of the molecule, then rotate the 
-            	//  perspective so that it looks like the axis did not move.  
+            	axisRotSlider.setValue(0);
+            	
+            	axisEnd0 = new Vector3(axisRadius, 0, 0);
+            	
+            	view1.evalString(
+            			"reset;");
+            	
+            	if(perspectiveLink) view0.evalString("reset;");
+            	
+            	if(axisShown)drawAxis();
+            	if(planeShown)drawCircle();
+            	            	
             	
             }
             else if(e.getSource() == yAlignAxis)
             {
-            	
-            	//First we need to get the rotation angles so that we can align the molecule
-            	//  with the y axis 
-            	//		Assuming your vector is (x,y,z):
-            	//			1. Rotate by alpha around the y-axis.
-            	//			2. Rotate by beta around the z-axis.
-            	double x = axisEnd0.x;
-            	double y = axisEnd0.y;
-            	double z = axisEnd0.z;
-            	double alpha = Math.toDegrees(Math.atan2(z, x));
-            	double r = Math.sqrt(x*x + y*y + z*z);
-            	double beta = Math.toDegrees(Math.acos(y/r));
-            	double negAlpha = -alpha;
-            	double negBeta = -beta;
-            	
-            	Matrix3x3 yRotMat = Matrix3x3.rotationMatrix(alpha);
-            	Vector3 temp = yRotMat.transform(new Vector3(x,z,y));            	
-            	temp = new Vector3(temp.x, temp.z, temp.y);
-            	
-            	Matrix3x3 zRotMat = Matrix3x3.rotationMatrix(beta);
-            	temp = zRotMat.transform(temp);
-            	//Vector3 temp = zRotMat.transform(new Vector3(x,y,z));
+            	axisRotSlider.setValue(0);
             	
             	axisEnd0 = new Vector3(0, axisRadius, 0);
             	
             	view1.evalString(
             			"reset;" +
-            			"rotate z "+90+";" +
-			    		//"rotate y "+negAlpha+";" +			    		
-			    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
-				    		" {"+-axisEnd0.x+","+-axisEnd0.y+","+-axisEnd0.z+"};");
+            			"rotate z 90;");
+            	            	
+            	if(perspectiveLink) 
+            	{
+            		view0.evalString(
+                			"reset;" +
+                			"rotate z 90;");
+            	}
             	
+            	if(axisShown)drawAxis();
+            	if(planeShown)drawCircle();
             }
             else if(e.getSource() == zAlignAxis)
             {
-            	//view1.evalString("show STATE;");
+            	axisRotSlider.setValue(0);
+            	
+            	axisEnd0 = new Vector3(0, 0, axisRadius);
+            	
+            	view1.evalString(
+            			"reset;" +
+            			"rotate y 90;");
+            	
+            	if(perspectiveLink) 
+            	{
+            		view0.evalString(
+                			"reset;" +
+                			"rotate y 90;");
+            	}
+            	
+            	if(axisShown)drawAxis();
+            	if(planeShown)drawCircle();
+            	            	
             }
             else if(e.getSource() == next)
             {
@@ -1088,25 +1140,12 @@ public class Molly extends Applet
 						axisEnd0.x = rotVector[0];
 						axisEnd0.y = rotVector[1];
 						axisEnd0.z = rotVector[2];	
-						axisEnd1.x = -rotVector[0];
-						axisEnd1.y = -rotVector[1];
-						axisEnd1.z = -rotVector[2];	
+						//axisEnd1.x = -rotVector[0];
+						//axisEnd1.y = -rotVector[1];
+						//axisEnd1.z = -rotVector[2];	
 						
-						if(axisShown)
-						{
-							view1.evalString(
-						    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
-							    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
-						}
-						if(planeShown)
-						{
-							int scale = (int)Math.ceil(axisRadius * 180.5);
-							view1.evalString(
-						    		"draw circle {0,0,0} {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"} "+
-						    				"SCALE "+scale+" color translucent;");
-						}
-						
-						
+						if(axisShown)drawAxis();
+		            	if(planeShown)drawCircle();						
 						
 					}
 					break; 
@@ -1295,35 +1334,30 @@ public class Molly extends Applet
 					double x = orig.x;
 					double y = 0;
 					double z = orig.y;
-					System.out.println("************************************************");
-					System.out.println(uPerspective + " "+vPerspective+" "+wPerspective+" "+aPerspective);
-					System.out.println("************************************************");
 					//Create the matrix to multiply our axis vector by.
-					RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, Math.toRadians(-aPerspective));
 					
-					//do the matrix multiplication
-					double[] rotVector = rotMat.timesXYZ(x, y, z);
-																
-					axisEnd0.x = rotVector[0];
-					axisEnd0.y = rotVector[1];
-					axisEnd0.z = rotVector[2];	
-					axisEnd1.x = -rotVector[0];
-					axisEnd1.y = -rotVector[1];
-					axisEnd1.z = -rotVector[2];	
-					
-					if(axisShown)
+					//Wierd things happen when this is run without the Perspective state being changed.
+					//  So we will only modify from the perspective if there is actually something that has happened.
+					if(!(uPerspective==0.0 && wPerspective ==0.0 ))
 					{
-						view1.evalString(
-					    		"draw axis1 {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"}" +
-						    		" {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"};");
+						RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, Math.toRadians(-aPerspective));
+						
+						//do the matrix multiplication
+						double[] rotVector = rotMat.timesXYZ(x, y, z);
+						
+						axisEnd0.x = rotVector[0];
+						axisEnd0.y = rotVector[1];
+						axisEnd0.z = rotVector[2];	
 					}
-					if(planeShown)
+					else
 					{
-						int scale = (int)Math.ceil(axisRadius * 180.5);
-						view1.evalString(
-					    		"draw circle {0,0,0} {"+axisEnd1.x+","+axisEnd1.y+","+axisEnd1.z+"} "+
-					    				"SCALE "+scale+" color translucent;");
-					}
+						axisEnd0.x = x;
+						axisEnd0.y = y;
+						axisEnd0.z = z;	
+					}																
+										
+					if(axisShown)drawAxis();
+	            	if(planeShown)drawCircle();
 				}
 		    }
 		}
