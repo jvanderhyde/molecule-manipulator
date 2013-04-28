@@ -1,4 +1,4 @@
-//TODO fix axis and double plane bug...
+//TODO Possibly add a "Lock Axis" check box to allow the axis to rotate or not. 
 
 package molMan;
 //Reference the required Java libraries
@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Scanner;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -24,6 +25,7 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JSlider;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
@@ -39,21 +41,7 @@ import org.jmol.constant.EnumCallback;
 //The applet code  
 public class Molly extends Applet 
 {
-    ////////////GUI Components\\\\\\\\\\\\
-	private static final long serialVersionUID = 1L;	
-	private JmolPanel jmolPanel0;
-	private JmolPanel jmolPanel1;
-	private JmolViewer view0;
-	private JmolViewer view1;
-    private JTextField input = new JTextField(30);
-    private JTextField axisRotField = new JTextField("-45", 2);    
-    private JLabel currentMolLabel = new JLabel("");
-    private JLabel axisRotLabel = new JLabel("Rotation of Axis/Plane: ");
-	private JCheckBox showAxis = new JCheckBox("Show Axis");
-	private JCheckBox showPlane = new JCheckBox("Show Plane");
-	private JCheckBox perspectiveLinkBox = new JCheckBox("Link Rot");
-    private JSlider axisRotSlider;
-    
+   
     ////////////BUTTONS\\\\\\\\\\\\
     private JButton selectButton = new JButton("Select");
     private JButton spinButton = new JButton("Spin On/Off");
@@ -79,12 +67,18 @@ public class Molly extends Applet
 	private boolean axisShown = false;
 	private boolean planeShown = false;
 	private boolean perspectiveLink = true;
-	private boolean loadingMol0 = false;//These are both used to be able to tell when both Jmol windows are finished loading.
+	private boolean loadingMol0 = false;//These are both used to be able to tell when both Jmol windows are finished loading
     @SuppressWarnings("unused")
 	private boolean loadingMol1 = false;
+    private boolean loadFromPubchem = false;
     private String currentMolecule = "Caffeine";
     @SuppressWarnings("unused")
 	private String callbackString = new String("Nothing");
+    private String[] rotRefString = {"Rotation & Reflection",
+            "s1: 360̊", "s2: 180̊", "s3: 120̊", "s4: 90̊", "s5: 72̊", "s6: 60̊",
+            "s7: 51̊", "s8: 45̊", "s9: 40̊", "s10: 36̊"};
+    private String[] rotString = {"Rotations","c1: 360̊", "c2: 180̊", "c3: 120̊",
+        "c4: 90̊", "c5: 72̊", "c6: 60̊", "c7: 51̊", "c8: 45̊", "c9: 40̊", "c10: 36̊"};
     private int rotationAmount;    
     private final int W = 1400;
     private final int H = 800;
@@ -102,23 +96,33 @@ public class Molly extends Applet
 	double wPerspective = 0;
 	double aPerspective = 0;
 
+	
+	 ////////////GUI Components\\\\\\\\\\\\
+	private static final long serialVersionUID = 1L;	
+	private JmolPanel jmolPanel0;
+	private JmolPanel jmolPanel1;
+	private JmolViewer view0;
+	private JmolViewer view1;
+    private JTextField input = new JTextField(30);
+    private JTextField axisRotField = new JTextField("-45", 2);    
+    private JLabel currentMolLabel = new JLabel("");
+    private JLabel axisRotLabel = new JLabel("Rotation of Axis/Plane: ");
+	private JCheckBox showAxis = new JCheckBox("Show Axis");
+	private JCheckBox showPlane = new JCheckBox("Show Plane");
+	private JCheckBox perspectiveLinkBox = new JCheckBox("Link Rot");
+    private JSlider axisRotSlider;
+    private JComboBox rotRefBox = new JComboBox(rotRefString);
+    private JComboBox rotBox = new JComboBox(rotString);
+    private JRadioButton pubChemRadioBut = new JRadioButton("PubChem");
+    private JRadioButton nciNihRadioBut = new JRadioButton("NCI/NIH");
+    
+	
     ////////////LISTENERS\\\\\\\\\\\\    
     private MyChangeListener sliderListener = new MyChangeListener();
     private MyJmolListener jListen0 = new MyJmolListener();
     private MyJmolListener jListen1 = new MyJmolListener();
     
-    
-    
-    private String[] rotRefString = {"Rotation & Reflection",
-            "s1: 360̊", "s2: 180̊", "s3: 120̊", "s4: 90̊", "s5: 72̊", "s6: 60̊",
-            "s7: 51̊", "s8: 45̊", "s9: 40̊", "s10: 36̊"};
-    private JComboBox rotRefBox = new JComboBox(rotRefString);
-    private String[] rotString = {"Rotations","c1: 360̊", "c2: 180̊", "c3: 120̊",
-        "c4: 90̊", "c5: 72̊", "c6: 60̊", "c7: 51̊", "c8: 45̊", "c9: 40̊", "c10: 36̊"};
-    private JComboBox rotBox = new JComboBox(rotString);
-    
-    
-    
+       
 	public void init()
 	{			
 		//Calculate the appropriate size for jmolPanel		
@@ -146,8 +150,8 @@ public class Molly extends Applet
         loadingMol1 = true;
         
         //Load up the initial molecules...
-        view0.evalString("load \":caffeine\";");        
-        view1.evalString("load \":caffeine\";");
+        view0.evalString("load \"$caffeine\";");        
+        view1.evalString("load \"$caffeine\";");
     }
 	
 	public void setUpGui()
@@ -165,56 +169,85 @@ public class Molly extends Applet
         top.setLayout(new BoxLayout(top, BoxLayout.X_AXIS));
         middle.setLayout(new BoxLayout(middle, BoxLayout.X_AXIS));
         bottom.setLayout(new BorderLayout());
-        
+        ButtonListener handler = new ButtonListener();
         
         ///////////////////////////TOP SECTION\\\\\\\\\\\\\\\\\\\\\\\\
         //logo for the program
         JPanel logo = new JPanel();
-        JLabel logoLabel = new JLabel();
-		ImageIcon logoImage = new ImageIcon("logo.png", "MolMan");
-		logoLabel.setIcon(logoImage);
+        	JLabel logoLabel = new JLabel();
+        	ImageIcon logoImage = new ImageIcon("logo.png", "MolMan");
+        	logoLabel.setIcon(logoImage);
 		logo.add(logoLabel);
 
-		//label for the text box
-        JPanel mol = new JPanel();
-        mol.setLayout(new FlowLayout());
-        JLabel molLabel = new JLabel("Please input a molecular formula:");
-        mol.add(molLabel);
+		
         
-        //text box
-        JPanel text = new JPanel();
-        text.setLayout(new FlowLayout());
-        text.add(input);
-        
-        //draw button
-        JPanel button = new JPanel();
-        button.setLayout(new FlowLayout());
-        ButtonListener handler = new ButtonListener();
-        selectButton.addActionListener(handler);
-        button.add(selectButton);
-        input.addActionListener(handler);
-     
         //add elements to the NORTH border
         JPanel molName = new JPanel();
-        molName.setLayout(new BorderLayout());
-        molName.setAlignmentY(CENTER_ALIGNMENT);
-        JPanel borderTop = new JPanel();
-        borderTop.setLayout(new FlowLayout());
-        borderTop.add(mol);
-        borderTop.add(text);
-        borderTop.add(button);
-
-        //add elements to SOUTH border
-        currentMolLabel = new JLabel("Current Molecule: ");
-        currentMolLabel.setFont(new Font("Sans Serif", Font.BOLD, 24));
-        JPanel currentPanel = new JPanel();
-        currentPanel.setLayout(new FlowLayout());
-        currentPanel.setAlignmentY(CENTER_ALIGNMENT);
-        currentPanel.add(currentMolLabel);
+        	molName.setLayout(new BorderLayout());
+        	molName.setAlignmentY(CENTER_ALIGNMENT);
         
+        	
+        	JPanel loadMolGroup = new JPanel();
+        		loadMolGroup.setLayout(new BorderLayout());
+        	
+	        	JPanel sourceSelectFlow = new JPanel(new FlowLayout());
+	        		nciNihRadioBut.addActionListener(handler);
+	        		pubChemRadioBut.addActionListener(handler);
+	        		
+	        		ButtonGroup sourcesRadioButs = new ButtonGroup();
+	        		sourcesRadioButs.add(nciNihRadioBut);
+	        		sourcesRadioButs.add(pubChemRadioBut);
+	        		
+	        		nciNihRadioBut.setSelected(true);
+	        	
+	        	sourceSelectFlow.add(nciNihRadioBut);
+	        	sourceSelectFlow.add(pubChemRadioBut);
+	        	
+	        	        	
+	        	JPanel borderTop = new JPanel();
+	        	borderTop.setLayout(new FlowLayout());
+	        	
+		        	//label for the text box
+		            JPanel mol = new JPanel();
+		            	mol.setLayout(new FlowLayout());
+		            	JLabel molLabel = new JLabel("<html><body>Enter the Name or Identifier <br>(SMILES, InChl, CAS) of a compound:</body></html>");
+		            mol.add(molLabel);        	
+		        	
+		        	//text box
+		            JPanel text = new JPanel();
+		            	text.setLayout(new FlowLayout());
+		            	input.addActionListener(handler);
+		            text.add(input);
+		        	
+		        	//draw button
+		            JPanel button = new JPanel();
+		            	button.setLayout(new FlowLayout());
+		            	selectButton.addActionListener(handler);
+		            button.add(selectButton);
+		        		        
+		        borderTop.add(mol);
+		        borderTop.add(text);
+		        borderTop.add(button);
+	
+	        loadMolGroup.add(sourceSelectFlow, BorderLayout.NORTH);
+	        loadMolGroup.add(borderTop, BorderLayout.CENTER);
+	        loadMolGroup.setBorder(BorderFactory.createTitledBorder(
+	        		BorderFactory.createLineBorder(Color.black), "Load Compound",
+	        		2, 0, new Font("Sans Serif", Font.BOLD, 20)));
+	        loadMolGroup.setPreferredSize(new Dimension(jmolWidth*2,jmolWidth/3));
+		        
+		        
+	        JPanel currentPanel = new JPanel();
+	        	currentPanel.setLayout(new FlowLayout());
+	        	currentPanel.setAlignmentY(CENTER_ALIGNMENT);
+	        	currentMolLabel = new JLabel("Current Molecule: ");
+	            currentMolLabel.setFont(new Font("Sans Serif", Font.BOLD, 24));
+	        currentPanel.add(currentMolLabel);
+	        
         //Add border to the pane
-        molName.add(borderTop, BorderLayout.NORTH);
-        molName.add(currentPanel, BorderLayout.CENTER);
+	    molName.add(loadMolGroup, BorderLayout.CENTER);
+        molName.add(currentPanel, BorderLayout.SOUTH);
+        
         
         //Add all panels to the top
         top.add(logo);       
@@ -392,23 +425,49 @@ public class Molly extends Applet
 	        
 	        //////////MOLECULE VARIATION GROUP\\\\\\\\\\\ (Testing purposes only...)
 	        //create previous/next buttons
-	        JPanel buttonFlow = new JPanel();
+	        JPanel buttonFlow = new JPanel(new FlowLayout());
 		        previous.addActionListener(handler);
 		        next.addActionListener(handler);
 		        //Label
 		        JLabel molVar = new JLabel("  Molecule Variations  ");
-	        buttonFlow.setLayout(new FlowLayout());
-	        buttonFlow.add(previous);
-	        buttonFlow.add(molVar);
-	        buttonFlow.add(next);
+	       
+		        JLabel googleCodeLable = new JLabel();
+	        		ImageIcon googleCodeLogo = new ImageIcon("googleCodeIcon.png", "Google Code");
+	        	googleCodeLable.setIcon(googleCodeLogo); 
+	        	
+	        	JLabel eclipseLable = new JLabel();
+        			ImageIcon eclipseLogo = new ImageIcon("eclipseIcon.png", "Eclipse");
+        		eclipseLable.setIcon(eclipseLogo);
+        		
+        		JLabel jmolLable = new JLabel();
+    				ImageIcon jmolLogo = new ImageIcon("jmolIcon.png", "Jmol");
+    			jmolLable.setIcon(jmolLogo);
+    			
+    			JLabel pubChemLable = new JLabel();
+					ImageIcon pubChemLogo = new ImageIcon("pubChemIcon.png", "pubChem");
+				pubChemLable.setIcon(pubChemLogo);
+		    
+				JLabel nihLable = new JLabel();
+					ImageIcon nihLogo = new ImageIcon("nihIcon.png", "nih");
+				nihLable.setIcon(nihLogo);
+				
+				JLabel javaLable = new JLabel();
+					ImageIcon javaLogo = new ImageIcon("javaIcon.png", "java");
+				javaLable.setIcon(javaLogo);
+				
+			buttonFlow.add(javaLable);
+	        buttonFlow.add(jmolLable);
+	        buttonFlow.add(eclipseLable);
+	        buttonFlow.add(googleCodeLable);
+	        buttonFlow.add(pubChemLable);
+	        buttonFlow.add(nihLable);
+	        //buttonFlow.add(previous);
+	        //buttonFlow.add(molVar);
+	        //buttonFlow.add(next);
 	        
         southCenterBorder.add(controlButsFlow, BorderLayout.CENTER);
         southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
         
-        
-              
-	        
-	        
         
         bottom.add(southCenterBorder, BorderLayout.CENTER);
         bottom.add(axisOptionsGroup, BorderLayout.WEST);
@@ -437,11 +496,22 @@ public class Molly extends Applet
 			urlName1 = view1.getModelSetPathName();
 		}
 		
-        //http://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/SDF?record_type=3d
-        urlName0 = urlName0.substring(55, urlName0.length()-19); 
+        if(loadFromPubchem)
+        {
+        	//http://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/SDF?record_type=3d
+            urlName0 = urlName0.substring(55, urlName0.length()-19); 
 
-        currentMolecule = urlName0;
-        currentMolLabel.setText("Current Molecule: "+currentMolecule);
+            currentMolecule = urlName0;
+            currentMolLabel.setText("Current Molecule: "+currentMolecule);
+        }
+        else
+        {
+        	//http://cactus.nci.nih.gov/chemical/structure/PF5/file?format=sdf&get3d=True
+        	urlName0 = urlName0.substring(45, urlName0.length()-27); 
+
+            currentMolecule = urlName0;
+            currentMolLabel.setText("Current Molecule: "+currentMolecule);
+        }
         
         resetAxisSize();
 	}
@@ -523,11 +593,25 @@ public class Molly extends Applet
 				//Check the evalString method in JMol 
 				loadingMol0=true;
 				loadingMol1=false;
-				view0.evalString(
-					"try{" + //If the molecule fails to load an error dialogue box pops up...
-							"load \":"+currentMolecule+"\"" +
-					"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
-		        view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");      
+				
+				if(loadFromPubchem)
+				{
+					view0.evalString(
+							"try{" + //If the molecule fails to load an error dialogue box pops up...
+									"load \":"+currentMolecule+"\"" +
+							"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
+				    view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");
+				}
+				else
+				{
+					view0.evalString(
+							"try{" + //If the molecule fails to load an error dialogue box pops up...
+									"load \"$"+currentMolecule+"\"" +
+							"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
+				    view1.evalString("try{load \"$"+currentMolecule+"\"}catch(e){}");
+				}
+				
+				      
 			}
 			
 			//Called if the ROTATE On/Off button is hit to spin both molecules.
@@ -999,6 +1083,14 @@ public class Molly extends Applet
             	if(axisShown)drawAxis();
             	if(planeShown)drawCircle();
             	            	
+            }
+            else if(e.getSource() == pubChemRadioBut)
+            {
+            	loadFromPubchem = true;
+            }
+            else if(e.getSource() == nciNihRadioBut)
+            {
+            	loadFromPubchem = false;
             }
             else if(e.getSource() == next)
             {
