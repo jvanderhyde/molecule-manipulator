@@ -77,10 +77,10 @@ public class Molly extends Applet
     @SuppressWarnings("unused")
 	private String callbackString = new String("Nothing");
     private String[] rotRefString = {"Rotation & Reflection",
-            "s1: 360°", "s2: 180°", "s3: 120°", "s4: 90°", "s5: 72°", "s6: 60°",
-            "s7: 51°", "s8: 45°", "s9: 40°", "s10: 36°"};
-    private String[] rotString = {"Rotations","c1: 360°", "c2: 180°", "c3: 120°",
-        "c4: 90°", "c5: 72°", "c6: 60°", "c7: 51°", "c8: 45°", "c9: 40°", "c10: 36°"};
+            "s1: 360 deg", "s2: 180 deg", "s3: 120 deg", "s4: 90 deg", "s5: 72 deg", "s6: 60 deg",
+            "s7: 51 deg", "s8: 45 deg", "s9: 40 deg", "s10: 36 deg"};
+    private String[] rotString = {"Rotations","c1: 360 deg", "c2: 180 deg", "c3: 120 deg",
+        "c4: 90 deg", "c5: 72 deg", "c6: 60 deg", "c7: 51 deg", "c8: 45 deg", "c9: 40 deg", "c10: 36 deg"};
     private int rotationAmount;    
     private final int W = 1400;
     private final int H = 800;
