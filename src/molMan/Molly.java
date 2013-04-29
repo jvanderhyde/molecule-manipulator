@@ -127,23 +127,17 @@ public class Molly extends Applet
 	{		
 		//Calculate the appropriate size for jmolPanel	
 		jmolWidth = this.getWidth()/3;
-		AccessController.doPrivileged(new PrivilegedAction()
-		{
-		public Object run()
-		{	
-			jmolPanel0 = new JmolPanel();
-	        jmolPanel1 = new JmolPanel();
-
-	        jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
-	        jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
-
-	        setUpGui();
-	        loadStructure();
-	        axisRotSlider.setValue(-45);
-			return null;
-		}
-		});
 		
+		jmolPanel0 = new JmolPanel();
+        jmolPanel1 = new JmolPanel();
+
+        jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
+        jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
+
+        setUpGui();
+        loadStructure();
+        axisRotSlider.setValue(-45);
+	
 	}
 	
 	public void loadStructure() 
@@ -277,7 +271,7 @@ public class Molly extends Applet
 	    		JLabel rotTextLabel = new JLabel("<html><body>" +
 	    				"Rotations occur around the axis of<br>" +
 	    				"rotation.  Valid rotation degrees are<br>" +
-	    				"360°/n for any integer 1=<n>=10.<br>" +
+	    				"360deg/n for any integer 1=<n>=10.<br>" +
 	    				" <br>" +
 	    				"To perform a rotation, specify your<br>" +
 	    				"desired axis with the options below.<br>" +
