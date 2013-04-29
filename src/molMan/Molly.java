@@ -1,4 +1,3 @@
-//TODO Possibly add a "Lock Axis" check box to allow the axis to rotate or not. 
 
 package molMan;
 //Reference the required Java libraries
@@ -12,6 +11,9 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.security.AccessController;
+import java.security.Permission;
+import java.security.PrivilegedAction;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Scanner;
@@ -49,14 +51,13 @@ public class Molly extends Applet
     private JButton reset0Button = new JButton("Reset");
     private JButton reset1Button = new JButton("Reset");
     private JButton rotButton = new JButton("Rotate");
-    private JButton rotRefButton = new JButton("Rotate & Invert");
+    private JButton rotRefButton = new JButton("Rotate & Reflect");
     private JButton refButton = new JButton("Reflect");
     private JButton previous = new JButton("Previous");
     private JButton next = new JButton("Next");  
     private JButton xAlignAxis = new JButton("Align X");
     private JButton yAlignAxis = new JButton("Align Y");
     private JButton zAlignAxis = new JButton("Align Z");
-    
     
     ////////////STATE VARIABLES\\\\\\\\\\\\
     private boolean rotateOn = false;
@@ -71,14 +72,15 @@ public class Molly extends Applet
     @SuppressWarnings("unused")
 	private boolean loadingMol1 = false;
     private boolean loadFromPubchem = false;
+    private boolean axisRotLock = true;
     private String currentMolecule = "Caffeine";
     @SuppressWarnings("unused")
 	private String callbackString = new String("Nothing");
     private String[] rotRefString = {"Rotation & Reflection",
-            "s1: 360ÌŠ", "s2: 180ÌŠ", "s3: 120ÌŠ", "s4: 90ÌŠ", "s5: 72ÌŠ", "s6: 60ÌŠ",
-            "s7: 51ÌŠ", "s8: 45ÌŠ", "s9: 40ÌŠ", "s10: 36ÌŠ"};
-    private String[] rotString = {"Rotations","c1: 360ÌŠ", "c2: 180ÌŠ", "c3: 120ÌŠ",
-        "c4: 90ÌŠ", "c5: 72ÌŠ", "c6: 60ÌŠ", "c7: 51ÌŠ", "c8: 45ÌŠ", "c9: 40ÌŠ", "c10: 36ÌŠ"};
+            "s1: 360°", "s2: 180°", "s3: 120°", "s4: 90°", "s5: 72°", "s6: 60°",
+            "s7: 51°", "s8: 45°", "s9: 40°", "s10: 36°"};
+    private String[] rotString = {"Rotations","c1: 360°", "c2: 180°", "c3: 120°",
+        "c4: 90°", "c5: 72°", "c6: 60°", "c7: 51°", "c8: 45°", "c9: 40°", "c10: 36°"};
     private int rotationAmount;    
     private final int W = 1400;
     private final int H = 800;
@@ -95,7 +97,6 @@ public class Molly extends Applet
 	double vPerspective = 0;
 	double wPerspective = 0;
 	double aPerspective = 0;
-
 	
 	 ////////////GUI Components\\\\\\\\\\\\
 	private static final long serialVersionUID = 1L;	
@@ -110,33 +111,39 @@ public class Molly extends Applet
 	private JCheckBox showAxis = new JCheckBox("Show Axis");
 	private JCheckBox showPlane = new JCheckBox("Show Plane");
 	private JCheckBox perspectiveLinkBox = new JCheckBox("Link Rot");
+	private JCheckBox axisRotLockBox = new JCheckBox("Lock Rotation");
     private JSlider axisRotSlider;
     private JComboBox rotRefBox = new JComboBox(rotRefString);
     private JComboBox rotBox = new JComboBox(rotString);
     private JRadioButton pubChemRadioBut = new JRadioButton("PubChem");
     private JRadioButton nciNihRadioBut = new JRadioButton("NCI/NIH");
-    
 	
     ////////////LISTENERS\\\\\\\\\\\\    
     private MyChangeListener sliderListener = new MyChangeListener();
     private MyJmolListener jListen0 = new MyJmolListener();
     private MyJmolListener jListen1 = new MyJmolListener();
-    
-       
+     
 	public void init()
-	{			
-		//Calculate the appropriate size for jmolPanel		
+	{		
+		//Calculate the appropriate size for jmolPanel	
 		jmolWidth = this.getWidth()/3;
-				
-		jmolPanel0 = new JmolPanel();
-        jmolPanel1 = new JmolPanel();
+		AccessController.doPrivileged(new PrivilegedAction()
+		{
+		public Object run()
+		{	
+			jmolPanel0 = new JmolPanel();
+	        jmolPanel1 = new JmolPanel();
 
-        jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
-        jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
+	        jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
+	        jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
 
-        setUpGui();
-        loadStructure();
-        axisRotSlider.setValue(-45);
+	        setUpGui();
+	        loadStructure();
+	        axisRotSlider.setValue(-45);
+			return null;
+		}
+		});
+		
 	}
 	
 	public void loadStructure() 
@@ -150,8 +157,8 @@ public class Molly extends Applet
         loadingMol1 = true;
         
         //Load up the initial molecules...
-        view0.evalString("load \"$caffeine\";");        
-        view1.evalString("load \"$caffeine\";");
+        view0.evalString("load \"$Caffeine\";");        
+        view1.evalString("load \"$Caffeine\";");
     }
 	
 	public void setUpGui()
@@ -178,8 +185,6 @@ public class Molly extends Applet
         	ImageIcon logoImage = new ImageIcon("logo.png", "MolMan");
         	logoLabel.setIcon(logoImage);
 		logo.add(logoLabel);
-
-		
         
         //add elements to the NORTH border
         JPanel molName = new JPanel();
@@ -261,71 +266,149 @@ public class Molly extends Applet
         
         //ROTATE TAB\\
         rot = new JPanel();
-        rot.setLayout(new BoxLayout(rot, BoxLayout.Y_AXIS));
-        JPanel rotationButFlow = new JPanel(new FlowLayout()); 
-        rotButton.addActionListener(handler);
-        rotationButFlow.add(rotButton);
-        JLabel rotationTitle = new JLabel("ROTATION");
-        rotationTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
-        rotBox.setSelectedIndex(0);
-        JPanel rotBoxPan = new JPanel(new FlowLayout());
-        rotBoxPan.add(rotBox);
-        
+        	rot.setLayout(new BoxLayout(rot, BoxLayout.Y_AXIS));
+        	
+	        JLabel rotationTitle = new JLabel("ROTATION");
+	        	rotationTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+	        
+	        JLabel rotSpacer = new JLabel(" ");
+	        	
+	        JPanel rotTextFlow = new JPanel(new FlowLayout());
+	    		JLabel rotTextLabel = new JLabel("<html><body>" +
+	    				"Rotations occur around the axis of<br>" +
+	    				"rotation.  Valid rotation degrees are<br>" +
+	    				"360°/n for any integer 1=<n>=10.<br>" +
+	    				" <br>" +
+	    				"To perform a rotation, specify your<br>" +
+	    				"desired axis with the options below.<br>" +
+	    				"Then select the degrees of rotation from<br>" +
+	    				"the drop-down list and click the Rotate<br>" +
+	    				"Button." +
+	    				"</body></html>");
+	    		rotTextLabel.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+    		rotTextFlow.add(rotTextLabel);
+	        
+	        JPanel rotBoxPan = new JPanel(new FlowLayout());
+	        	rotBox.setSelectedIndex(0);
+	        rotBoxPan.add(rotBox);
+	        
+	        JPanel rotationButFlow = new JPanel(new FlowLayout()); 
+    			rotButton.addActionListener(handler);
+    		rotationButFlow.add(rotButton);
+	        
+    	rot.add(rotationTitle);
+    	rot.add(rotSpacer);
+    	rot.add(rotTextFlow);
         rot.add(rotBoxPan);
-        
         rot.add(rotationButFlow);
            
         //INVERT Tab\\
         inv = new JPanel();
-        inv.setLayout(new BoxLayout(inv, BoxLayout.Y_AXIS));
-        JPanel invButFlow = new JPanel(new FlowLayout()); 
-        invertButton.addActionListener(handler);
-        invButFlow.add(invertButton);
-        JLabel inversionTitle = new JLabel("INVERSION");
-        inversionTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
-        JTextArea inversionText = new JTextArea("\nInversion moves all of the atoms of the molecule from" +
-        		" their original position (x,y,z), through the center of the molecule, to the" +
-        		" opposite position (-x,-y,-z).");
-        inversionText.setFont(new Font("Times New Roman", Font.PLAIN, 14));
-        inversionText.setLineWrap(true);
-        inversionText.setWrapStyleWord(true);
-        inversionText.setOpaque(false);
-        JPanel invTextFlow = new JPanel(new FlowLayout());
-        invTextFlow.add(inversionText);
+	        inv.setLayout(new BoxLayout(inv, BoxLayout.Y_AXIS));
+	        inv.setAlignmentX(CENTER_ALIGNMENT);
+	        
+	        JLabel inversionTitle = new JLabel("INVERSION");
+        		inversionTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+        		
+        	JLabel invSpacer = new JLabel(" ");
+
+        	JPanel invTextFlow = new JPanel(new FlowLayout());
+        		JLabel inversionTextLabel = new JLabel("<html><body>" +
+        				"Inversion moves all of the molecule's<br>" +
+        				"atoms from their original position (x,y,z),<br>" +
+        				"through the center point of the molecule,<br>" +
+        				"to the opposite position (-x,-y,-z)." +
+        				"</body></html>");
+        		inversionTextLabel.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+	        invTextFlow.add(inversionTextLabel);
+	        
+	        JPanel invButFlow = new JPanel(new FlowLayout()); 
+        		invertButton.addActionListener(handler);
+        	invButFlow.add(invertButton);
+        	invButFlow.setAlignmentY(TOP_ALIGNMENT);
+        
         inv.add(inversionTitle);
-        //inv.add(invTextFlow);
+        inv.add(invSpacer);
+        inv.add(invTextFlow);
         inv.add(invButFlow);
-        
-        //ROTATE and REFLECT Tab\\
-        rotRef = new JPanel();
-        rotRef.setLayout(new BoxLayout(rotRef, BoxLayout.Y_AXIS));
-        JPanel rotRefButFlow = new JPanel(new FlowLayout()); 
-        rotRefButton.addActionListener(handler);
-        rotRefButFlow.add(rotRefButton);
-        JLabel rotRefTitle = new JLabel("ROTATION & INVERSION");
-        rotRefTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
-        
-		rotRefBox = new JComboBox(rotRefString);
-        rotBox.setSelectedIndex(0);
-        JPanel rotRefBoxPan = new JPanel(new FlowLayout());
-        rotRefBoxPan.add(rotRefBox);
-        
-        rotRef.add(rotRefBoxPan);
-        //rotRef.add(rotRefTitle);
-        rotRef.add(rotRefButFlow);
         
         //REFLECT Tab\\
         ref = new JPanel();
-        ref.setLayout(new BoxLayout(ref, BoxLayout.Y_AXIS));
-        JPanel reflectionButFlow = new JPanel(new FlowLayout()); 
-        refButton.addActionListener(handler);
-        reflectionButFlow.add(refButton);
-        JLabel reflectionTitle = new JLabel("REFLECTION");
-        reflectionTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
-        
-        ref.add(reflectionTitle);
+        	ref.setLayout(new BoxLayout(ref, BoxLayout.Y_AXIS));
+        	
+        	JLabel reflectionTitle = new JLabel("REFLECTION");
+        		reflectionTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+    
+        	JLabel refSpacer = new JLabel(" ");
+	        	
+	        JPanel refTextFlow = new JPanel(new FlowLayout());
+	    		JLabel refTextLabel = new JLabel("<html><body>" +
+	    				"Reflections occur through a plane.<br>" +
+	    				"Basically each atom is a certain distance,<br>" +
+	    				"D, from the plane.  During the reflection,<br>" +
+	    				"each atom is moved so that it is D away<br>" +
+	    				"from the plane on the opposite side.<br>" +
+	    				" <br>" +
+	    				"To perform a reflection, specify your<br>" +
+	    				"desired plane with the options below.<br>" +
+	    				"Then click the Reflect Button." +
+	    				"</body></html>");
+	    		refTextLabel.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+    		refTextFlow.add(refTextLabel);
+    	        	
+        		       		
+	        JPanel reflectionButFlow = new JPanel(new FlowLayout()); 
+		        refButton.addActionListener(handler);
+		    reflectionButFlow.add(refButton);
+	    
+	    ref.add(reflectionTitle);
+	    ref.add(refSpacer);
+	    ref.add(refTextFlow);
         ref.add(reflectionButFlow);
          
+        //ROTATE and REFLECT Tab\\
+        rotRef = new JPanel();
+	        rotRef.setLayout(new BoxLayout(rotRef, BoxLayout.Y_AXIS));
+	        
+	        JLabel rotRefTitle = new JLabel("ROTATION & REFLECTION");
+	        	rotRefTitle.setFont(new Font("Sans Serif", Font.BOLD, 20));
+	        	
+	        
+	        JLabel rotRefSpacer = new JLabel(" ");
+	        	
+	        JPanel rotRefTextFlow = new JPanel(new FlowLayout());
+	    		JLabel rotRefTextLabel = new JLabel("<html><body>" +
+	    				"Rotation and Reflection is basically.<br>" +
+	    				"exactly what it sounds like.  A rotation<br>" +
+	    				"is performed around an axis and then the<br>" +
+	    				"atoms are reflected through the plane that<br>" +
+	    				"perpendicular to the axis of rotation<br>" +
+	    				" <br>" +
+	    				"To perform a Rotation and Reflection, specify<br>" +
+	    				"your desired axis/plane with the options<br>" +
+	    				"below.  Select your degree of rotation from<br>" +
+	    				"the drop-down list. Then click the Rotate<br>" +
+	    				"and Reflect Button." +
+	    				"</body></html>");
+	    		rotRefTextLabel.setFont(new Font("Times New Roman", Font.PLAIN, 16));
+    		rotRefTextFlow.add(rotRefTextLabel);
+    	        		       
+	        JPanel rotRefBoxPan = new JPanel(new FlowLayout());
+				rotRefBox = new JComboBox(rotRefString);
+				rotRefBox.setSelectedIndex(0);
+	        rotRefBoxPan.add(rotRefBox);
+	        
+	        JPanel rotRefButFlow = new JPanel(new FlowLayout()); 
+        		rotRefButton.addActionListener(handler);
+        	rotRefButFlow.add(rotRefButton);
+        
+        rotRef.add(rotRefTitle);
+        rotRef.add(rotRefSpacer);
+        rotRef.add(rotRefTextFlow);
+        rotRef.add(rotRefBoxPan);
+        rotRef.add(rotRefButFlow);
+        
+        
         
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab("Rotation", null, rot, "Rotate the molecule around an axis");
@@ -333,7 +416,10 @@ public class Molly extends Applet
         tabs.addTab("Reflection", null, ref, "Reflect the molecule through a plane");
         tabs.addTab("Rot & Ref", null, rotRef, "");
         
-        tabs.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
+        tabs.setPreferredSize(new Dimension(jmolWidth, jmolWidth-50));
+       // tabs.setBorder(BorderFactory.createTitledBorder(
+       // 		BorderFactory.createLineBorder(Color.black), "Symmetry Operations",
+       // 		2, 0, new Font("Sans Serif", Font.BOLD, 16)));
         
         //adds tabbed display to the middle of the layout
         JPanel molViewer0 = new JPanel();
@@ -380,10 +466,12 @@ public class Molly extends Applet
        
         
         JPanel axisRotChecksBoxPanel = new JPanel();
-        axisRotChecksBoxPanel.setLayout(new BoxLayout(axisRotChecksBoxPanel, BoxLayout.Y_AXIS));
-        showAxis.addActionListener(handler);
-        showPlane.addActionListener(handler);
-        axisRotChecksBoxPanel.add(new JLabel(" "));
+        	axisRotChecksBoxPanel.setLayout(new BoxLayout(axisRotChecksBoxPanel, BoxLayout.Y_AXIS));
+        	showAxis.addActionListener(handler);
+        	showPlane.addActionListener(handler);
+        	axisRotLockBox.addActionListener(handler);
+        	axisRotLockBox.setSelected(true);
+        axisRotChecksBoxPanel.add(axisRotLockBox);
         axisRotChecksBoxPanel.add(showAxis);
         axisRotChecksBoxPanel.add(showPlane);
      
@@ -500,15 +588,19 @@ public class Molly extends Applet
         {
         	//http://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/SDF?record_type=3d
             urlName0 = urlName0.substring(55, urlName0.length()-19); 
+            
+            urlName0 = urlName0.replaceAll("%20", " ");//Puts spaces back in if the name is more then one word
 
             currentMolecule = urlName0;
             currentMolLabel.setText("Current Molecule: "+currentMolecule);
         }
-        else
+        else //Load from NCI/NIH
         {
         	//http://cactus.nci.nih.gov/chemical/structure/PF5/file?format=sdf&get3d=True
         	urlName0 = urlName0.substring(45, urlName0.length()-27); 
 
+        	 urlName0 = urlName0.replaceAll("%20", " ");
+        	
             currentMolecule = urlName0;
             currentMolLabel.setText("Current Molecule: "+currentMolecule);
         }
@@ -1092,6 +1184,10 @@ public class Molly extends Applet
             {
             	loadFromPubchem = false;
             }
+            else if(e.getSource() == axisRotLockBox)
+            {
+            	axisRotLock = !axisRotLock;
+            }
             else if(e.getSource() == next)
             {
             	//view1.evalString("show STATE;");
@@ -1176,68 +1272,73 @@ public class Molly extends Applet
 							view0.evalString(stateCommand);
 						}
 						
-						//We also need to adjust the location of axis1
-						//Its rotation should be opposite to that of the molecule.  
-						//This method of vector rotation from http://www.blitzbasic.com/Community/posts.php?topic=57616
 						
-						//We need to pull the axis coords out of the String
-						//To do this, we will use a scanner, but first we have to get the
-						//  } out of the way because for some reason it screws things up.
-						Scanner sc = new Scanner(stateCommand).useDelimiter("}");
-				    	String temp = "";
-				    	while(sc.hasNext()){ temp+= sc.next();}
-				    	   
-				    	//Now we can scan the text for the values we need
-				    	sc = new Scanner(temp);
-				    	int counter = 0;
-				    	double[] vals = new double[5];
-				    	while(sc.hasNext() && counter<5)
-				    	{
-				    		if(sc.hasNextDouble())
-				    		{
-				    			vals[counter] = sc.nextDouble();
-				    			counter++;
-				    		}
-				    		else sc.next();				    		
-				    	}
-					   	
-				    	//Store the axis values and the angle of rotation.
-				    	// u,v,w is the axis of rotation and a is the rotation ammount in degrees
-						uPerspective = vals[1];
-						vPerspective = vals[2];
-						wPerspective = vals[3];
-						aPerspective = vals[4];
-						
-						//Sets the original location of the drawn axis.
-						//We cannot just set these values, because then we cannot control the length of the
-						//  axis depending on the size of the molecule.  We will load the axis as usual and
-						//  then rotate it where we want it.  
-						
-						Vector3 orig = new Vector3(axisRadius, 0, 0);
-						
-						Matrix3x3 preliminaryYRot = Matrix3x3.rotationMatrix(yAxisRot);
-						
-						orig = preliminaryYRot.transform(orig);
-						
-						double x = orig.x;
-						double y = 0;
-						double z = orig.y;
-						
-						//Create the matrix to multiply our axis vector by.
-						RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, Math.toRadians(-aPerspective));
-						
-						//do the matrix multiplication/
-						double[] rotVector = rotMat.timesXYZ(x, y, z);
-																	
-						axisEnd0.x = rotVector[0];
-						axisEnd0.y = rotVector[1];
-						axisEnd0.z = rotVector[2];	
-						//axisEnd1.x = -rotVector[0];
-						//axisEnd1.y = -rotVector[1];
-						//axisEnd1.z = -rotVector[2];	
-						
-						if(axisShown)drawAxis();
-		            	if(planeShown)drawCircle();						
+						if(axisRotLock)
+						{
+							//We also need to adjust the location of axis1
+							//Its rotation should be opposite to that of the molecule.  
+							//This method of vector rotation from http://www.blitzbasic.com/Community/posts.php?topic=57616
+							
+							//We need to pull the axis coords out of the String
+							//To do this, we will use a scanner, but first we have to get the
+							//  } out of the way because for some reason it screws things up.
+							Scanner sc = new Scanner(stateCommand).useDelimiter("}");
+					    	String temp = "";
+					    	while(sc.hasNext()){ temp+= sc.next();}
+					    	   
+					    	//Now we can scan the text for the values we need
+					    	sc = new Scanner(temp);
+					    	int counter = 0;
+					    	double[] vals = new double[5];
+					    	while(sc.hasNext() && counter<5)
+					    	{
+					    		if(sc.hasNextDouble())
+					    		{
+					    			vals[counter] = sc.nextDouble();
+					    			counter++;
+					    		}
+					    		else sc.next();				    		
+					    	}
+						   	
+					    	//Store the axis values and the angle of rotation.
+					    	// u,v,w is the axis of rotation and a is the rotation ammount in degrees
+							uPerspective = vals[1];
+							vPerspective = vals[2];
+							wPerspective = vals[3];
+							aPerspective = vals[4];
+							
+							//Sets the original location of the drawn axis.
+							//We cannot just set these values, because then we cannot control the length of the
+							//  axis depending on the size of the molecule.  We will load the axis as usual and
+							//  then rotate it where we want it.  
+							
+							Vector3 orig = new Vector3(axisRadius, 0, 0);
+							
+							Matrix3x3 preliminaryYRot = Matrix3x3.rotationMatrix(yAxisRot);
+							
+							orig = preliminaryYRot.transform(orig);
+							
+							double x = orig.x;
+							double y = 0;
+							double z = orig.y;
+							
+							//Create the matrix to multiply our axis vector by.
+							RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, Math.toRadians(-aPerspective));
+							
+							//do the matrix multiplication/
+							double[] rotVector = rotMat.timesXYZ(x, y, z);
+																		
+							axisEnd0.x = rotVector[0];
+							axisEnd0.y = rotVector[1];
+							axisEnd0.z = rotVector[2];	
+							//axisEnd1.x = -rotVector[0];
+							//axisEnd1.y = -rotVector[1];
+							//axisEnd1.z = -rotVector[2];	
+							
+							if(axisShown)drawAxis();
+			            	if(planeShown)drawCircle();						
+							
+						}
 						
 					}
 					break; 
