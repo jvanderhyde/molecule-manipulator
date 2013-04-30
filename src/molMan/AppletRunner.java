@@ -22,12 +22,13 @@ public class AppletRunner
                 f.setVisible(false);
                 applet.stop();
                 applet.destroy();
+                f.dispose();
                 System.exit(0);//should not be necessary; something is not cleaned up correctly in applet
             }
         });
         f.setSize(1100,720);
         
-        f.setVisible(true);
+        f.setVisible(true);//must be done before applet.init()
         applet.init();
         applet.start();
         f.setVisible(true);//forces a repaint
