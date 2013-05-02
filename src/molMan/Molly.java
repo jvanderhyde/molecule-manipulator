@@ -1,4 +1,3 @@
-
 package molMan;
 //Reference the required Java libraries
 import java.applet.Applet;
@@ -11,9 +10,6 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.security.AccessController;
-import java.security.Permission;
-import java.security.PrivilegedAction;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Scanner;
@@ -30,7 +26,6 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JSlider;
 import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -40,6 +35,14 @@ import org.jmol.api.JmolStatusListener;
 import org.jmol.api.JmolViewer;
 import org.jmol.constant.EnumCallback;
 
+
+/**
+ * Molly is an applet designed to allow users (primarily chemistry students) to visualize and test for
+ * molecular symmetry.  
+ * @author Josh Kuestersteffen and Nathan Bohlig.
+ * See Mercurial repository on Google Code: https://code.google.com/p/molecule-manipulator/ for 
+ * revision history.
+ */
 //The applet code  
 public class Molly extends Applet 
 {
@@ -53,8 +56,6 @@ public class Molly extends Applet
     private JButton rotButton = new JButton("Rotate");
     private JButton rotRefButton = new JButton("Rotate & Reflect");
     private JButton refButton = new JButton("Reflect");
-    private JButton previous = new JButton("Previous");
-    private JButton next = new JButton("Next");  
     private JButton xAlignAxis = new JButton("Align X");
     private JButton yAlignAxis = new JButton("Align Y");
     private JButton zAlignAxis = new JButton("Align Z");
@@ -84,14 +85,11 @@ public class Molly extends Applet
     private int rotationAmount;    
     private final int W = 1400;
     private final int H = 800;
-    private int zAxisRot = 0;
-	private int xAxisRot = 0;
 	private int yAxisRot = -45;
 	int jmolWidth = 0;
+	private static final long serialVersionUID = 1L;	
     private float axisRadius = 5.539443f;
-    //These vectors are both halves of the real axis...      
 	private Vector3 axisEnd0 = new Vector3(axisRadius, 0, 0);
-	//private Vector3 axisEnd1 = new Vector3(-axisRadius,0,0);
     protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
     double uPerspective = 0;
 	double vPerspective = 0;
@@ -99,7 +97,6 @@ public class Molly extends Applet
 	double aPerspective = 0;
 	
 	 ////////////GUI Components\\\\\\\\\\\\
-	private static final long serialVersionUID = 1L;	
 	private JmolPanel jmolPanel0;
 	private JmolPanel jmolPanel1;
 	private JmolViewer view0;
@@ -113,8 +110,10 @@ public class Molly extends Applet
 	private JCheckBox perspectiveLinkBox = new JCheckBox("Link Rot");
 	private JCheckBox axisRotLockBox = new JCheckBox("Lock Rotation");
     private JSlider axisRotSlider;
-    private JComboBox rotRefBox = new JComboBox(rotRefString);
-    private JComboBox rotBox = new JComboBox(rotString);
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	private JComboBox rotRefBox = new JComboBox(rotRefString);
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	private JComboBox rotBox = new JComboBox(rotString);
     private JRadioButton pubChemRadioBut = new JRadioButton("PubChem");
     private JRadioButton nciNihRadioBut = new JRadioButton("NCI/NIH");
 	
@@ -123,6 +122,9 @@ public class Molly extends Applet
     private MyJmolListener jListen0 = new MyJmolListener();
     private MyJmolListener jListen1 = new MyJmolListener();
      
+    /**
+     * Runs when the applet is initialized.  It sets up the Jmol viewers and then loads up the GUI.
+     */
 	public void init()
 	{		
 		//Calculate the appropriate size for jmolPanel	
@@ -134,12 +136,19 @@ public class Molly extends Applet
         jmolPanel0.setPreferredSize(new Dimension(jmolWidth,jmolWidth));
         jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
 
-        setUpGui();
-        loadStructure();
-        axisRotSlider.setValue(-45);
-	
+        setUpGui();  //Sets up the Swing user interface.
+        
+        loadStructure();  //Finishes initialising the Jmol viewers and load the first molecule.
+        
+        axisRotSlider.setValue(-45);  //initializest the slider so it matches the axis angle.
+        
+        this.setVisible(true);
+        this.validate();  
 	}
 	
+	/**
+	 * Finishes seting up the Jmol viewers and loads the initial molecules.  
+	 */
 	public void loadStructure() 
 	{ 
         view0 = jmolPanel0.getViewer();
@@ -155,6 +164,10 @@ public class Molly extends Applet
         view1.evalString("load \"$Caffeine\";");
     }
 	
+	/**
+	 * Sets up the Graphical User Interface using Swing components.  
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void setUpGui()
 	{
 		///////////////////////////MAIN WINDOW\\\\\\\\\\\\\\\\\\\\\\\\
@@ -176,8 +189,9 @@ public class Molly extends Applet
         //logo for the program
         JPanel logo = new JPanel();
         	JLabel logoLabel = new JLabel();
-        	ImageIcon logoImage = new ImageIcon("logo.png", "MolMan");
-        	logoLabel.setIcon(logoImage);
+        		ImageIcon logoImage = createImageIcon("/images/logo.png", "Molly Logo");
+            logoLabel.setIcon(logoImage);
+        	        	
 		logo.add(logoLabel);
         
         //add elements to the NORTH border
@@ -185,7 +199,6 @@ public class Molly extends Applet
         	molName.setLayout(new BorderLayout());
         	molName.setAlignmentY(CENTER_ALIGNMENT);
         
-        	
         	JPanel loadMolGroup = new JPanel();
         		loadMolGroup.setLayout(new BorderLayout());
         	
@@ -202,7 +215,6 @@ public class Molly extends Applet
 	        	sourceSelectFlow.add(nciNihRadioBut);
 	        	sourceSelectFlow.add(pubChemRadioBut);
 	        	
-	        	        	
 	        	JPanel borderTop = new JPanel();
 	        	borderTop.setLayout(new FlowLayout());
 	        	
@@ -235,7 +247,6 @@ public class Molly extends Applet
 	        		2, 0, new Font("Sans Serif", Font.BOLD, 20)));
 	        loadMolGroup.setPreferredSize(new Dimension(jmolWidth*2,jmolWidth/3));
 		        
-		        
 	        JPanel currentPanel = new JPanel();
 	        	currentPanel.setLayout(new FlowLayout());
 	        	currentPanel.setAlignmentY(CENTER_ALIGNMENT);
@@ -247,11 +258,9 @@ public class Molly extends Applet
 	    molName.add(loadMolGroup, BorderLayout.CENTER);
         molName.add(currentPanel, BorderLayout.SOUTH);
         
-        
         //Add all panels to the top
         top.add(logo);       
         top.add(molName);       
-        
         
         ///////////////////////////MIDDLE SECTION\\\\\\\\\\\\\\\\\\\\\\\\
         //creates tabbed display
@@ -349,7 +358,6 @@ public class Molly extends Applet
 	    				"</body></html>");
 	    		refTextLabel.setFont(new Font("Times New Roman", Font.PLAIN, 16));
     		refTextFlow.add(refTextLabel);
-    	        	
         		       		
 	        JPanel reflectionButFlow = new JPanel(new FlowLayout()); 
 		        refButton.addActionListener(handler);
@@ -367,7 +375,6 @@ public class Molly extends Applet
 	        JLabel rotRefTitle = new JLabel("ROTATION & REFLECTION");
 	        	rotRefTitle.setFont(new Font("Sans Serif", Font.BOLD, 20));
 	        	
-	        
 	        JLabel rotRefSpacer = new JLabel(" ");
 	        	
 	        JPanel rotRefTextFlow = new JPanel(new FlowLayout());
@@ -402,8 +409,6 @@ public class Molly extends Applet
         rotRef.add(rotRefBoxPan);
         rotRef.add(rotRefButFlow);
         
-        
-        
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab("Rotation", null, rot, "Rotate the molecule around an axis");
         tabs.addTab("Inversion", null, inv, "Invert the molecule through a plane");
@@ -411,10 +416,7 @@ public class Molly extends Applet
         tabs.addTab("Rot & Ref", null, rotRef, "");
         
         tabs.setPreferredSize(new Dimension(jmolWidth, jmolWidth-50));
-       // tabs.setBorder(BorderFactory.createTitledBorder(
-       // 		BorderFactory.createLineBorder(Color.black), "Symmetry Operations",
-       // 		2, 0, new Font("Sans Serif", Font.BOLD, 16)));
-        
+       
         //adds tabbed display to the middle of the layout
         JPanel molViewer0 = new JPanel();
         JPanel molViewer1 = new JPanel();
@@ -426,10 +428,8 @@ public class Molly extends Applet
         middle.add(molViewer0);
         middle.add(molViewer1);
         
-        
         ///////////////////////////BOTTOM SECTION\\\\\\\\\\\\\\\\\\\\\\\\        
-        
-        
+                
         //////////AXIS OPTIONS GROUP\\\\\\\\\\\ 
         JPanel axisOptionsGroup = new JPanel(new BorderLayout());
         
@@ -439,7 +439,6 @@ public class Molly extends Applet
         	axisRotSlider = new JSlider(JSlider.HORIZONTAL, -90, 90, 0);
         	axisRotSlider.addChangeListener(sliderListener);
         
-      
 	        JPanel yAxisRotFlow = new JPanel(new FlowLayout());
 	        	axisRotField.addActionListener(handler);
 	        yAxisRotFlow.add(axisRotLabel);
@@ -456,8 +455,6 @@ public class Molly extends Applet
         axisRotSlidersBoxPanel.add(alignmentButsFlow);
         axisRotSlidersBoxPanel.add(yAxisRotFlow);
         axisRotSlidersBoxPanel.add(axisRotSlider);
-        
-       
         
         JPanel axisRotChecksBoxPanel = new JPanel();
         	axisRotChecksBoxPanel.setLayout(new BoxLayout(axisRotChecksBoxPanel, BoxLayout.Y_AXIS));
@@ -504,15 +501,12 @@ public class Molly extends Applet
 	        controlButsFlow.add(reset1ButFlow, BorderLayout.EAST);
 	        
 	        
-	        
 	        //////////MOLECULE VARIATION GROUP\\\\\\\\\\\ (Testing purposes only...)
-	        //create previous/next buttons
+
+	        //Links Panel with Icons for relevant organizations.
+	        /*
 	        JPanel buttonFlow = new JPanel(new FlowLayout());
-		        previous.addActionListener(handler);
-		        next.addActionListener(handler);
-		        //Label
-		        JLabel molVar = new JLabel("  Molecule Variations  ");
-	       
+		       
 		        JLabel googleCodeLable = new JLabel();
 	        		ImageIcon googleCodeLogo = new ImageIcon("googleCodeIcon.png", "Google Code");
 	        	googleCodeLable.setIcon(googleCodeLogo); 
@@ -536,28 +530,20 @@ public class Molly extends Applet
 				JLabel javaLable = new JLabel();
 					ImageIcon javaLogo = new ImageIcon("javaIcon.png", "java");
 				javaLable.setIcon(javaLogo);
-				
+			
 			buttonFlow.add(javaLable);
 	        buttonFlow.add(jmolLable);
 	        buttonFlow.add(eclipseLable);
 	        buttonFlow.add(googleCodeLable);
 	        buttonFlow.add(pubChemLable);
 	        buttonFlow.add(nihLable);
-	        //buttonFlow.add(previous);
-	        //buttonFlow.add(molVar);
-	        //buttonFlow.add(next);
-	        
+	        */
+	        	        
         southCenterBorder.add(controlButsFlow, BorderLayout.CENTER);
-        southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
-        
+        //southCenterBorder.add(buttonFlow, BorderLayout.SOUTH);
         
         bottom.add(southCenterBorder, BorderLayout.CENTER);
         bottom.add(axisOptionsGroup, BorderLayout.WEST);
-        
-        
-        
-        
-        
         
         //adds each section to applet window
         this.add(top);
@@ -566,9 +552,15 @@ public class Molly extends Applet
         
 	}
 	
-	//Jmol calls this when it is done loading the molecule so that the molecule name can be updated.
+	/**
+	 *  This method gets called by Jmol when Jmol is done loading the molecule 
+	 *  so that the molecule name in the applet GUI can be updated. 
+	 */
 	public void changeCurrentMolLabel()
 	{
+		//The challenge here is dealing with race conditions between the applet and the Jmol applets.
+		//  We have got to make sure that the right name is loaded.
+		
 		String urlName0 = view0.getModelSetPathName();
 		String urlName1 = view1.getModelSetPathName();
 		
@@ -598,25 +590,30 @@ public class Molly extends Applet
             currentMolecule = urlName0;
             currentMolLabel.setText("Current Molecule: "+currentMolecule);
         }
-        
-        resetAxisSize();
+        resetAxisSize();  //Makes sure that the axis is the right length for the new molecule.
 	}
-	
-	
-	//This will check the size of the current molecule and adjust the vectors to match.
+		
+	/**
+	 * This method checks the size of the current molecule and adjusts the vector that controls
+	 * the length of the axis to match.
+	 */
 	public void resetAxisSize()
 	{
+		//Get the radius from the molecule loaded into view1.
 		axisRadius = view1.getRotationRadius();
 		
+		//Create a temporary vector at the x axis.
 		Vector3 orig = new Vector3(axisRadius, 0, 0);
 		
-		Matrix3x3 preliminaryRot = Matrix3x3.rotationMatrix(-45);
-		
-		orig = preliminaryRot.transform(orig);
-		
+		//Rotate the axis so that it has the proper alignment according to the slider.
+		Matrix3x3 preliminaryRot = Matrix3x3.rotationMatrix(yAxisRot);		
+		orig = preliminaryRot.transform(orig);		
 		axisEnd0 = new Vector3(orig.x, 0, orig.y);
-		//axisEnd1 = new Vector3(-orig.x,0,-orig.y);
 	}
+	
+	/**
+	 * Draws the axis according to the vector axisEnd0.
+	 */
 	public void drawAxis()
 	{
 		view1.evalString(
@@ -624,6 +621,9 @@ public class Molly extends Applet
 		    		" {"+-axisEnd0.x+","+-axisEnd0.y+","+-axisEnd0.z+"};");
 	}
 	
+	/**
+	 * Draws the plane (circle) perpendicular to the vector axisEnd0.
+	 */
 	public void drawCircle()
 	{
 		int scale = (int)Math.ceil(axisRadius * 180.5);
@@ -633,7 +633,34 @@ public class Molly extends Applet
 				"SCALE "+scale+" translucent [102,155,255];");
 	}
 	
-	//This code found at: http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
+	
+	/** 
+	 * Returns an ImageIcon, or null if the path was invalid.
+	 * From: http://docs.oracle.com/javase/tutorial/uiswing/components/icon.html\
+	 * 
+	 * @param path  The String containing the path to the image file.
+	 * @param description  The sting containing the description for the ImageIcon.
+	 * @return  Returns the ImageIcon created.
+	 */
+	protected ImageIcon createImageIcon(String path,
+	                                           String description) {
+	    java.net.URL imgURL = getClass().getResource(path);
+	    if (imgURL != null) {
+	        return new ImageIcon(imgURL, description);
+	    } else {
+	        System.err.println("Couldn't find file: " + path);
+	        return null;
+	    }
+	}
+	
+	
+	/**
+	 * JmolPanel creates a link between the Jmol viewer and our Swing interface by putting the
+	 * Jmol view in a JPanel so it can be dropped into any other JPanel.
+	 * @author This code is a modified version of code found at: 
+	 * 	http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
+	 * 	Modified by Josh Kuestersteffen
+	 */
 	static class JmolPanel extends JPanel 
 	{        
         private static final long serialVersionUID = -3661941083797644242L;
@@ -641,8 +668,15 @@ public class Molly extends Applet
         JmolAdapter adapter;
         JmolPanel() 
         {
-            adapter = new SmarterJmolAdapter();
-            viewer = JmolViewer.allocateViewer(this, adapter);
+        	adapter = new SmarterJmolAdapter();
+        	
+        	//TODO See if we can figure out if this will help our problem of loading molecules...
+        	//From: http://old.nabble.com/AccessControlException-when-opening-embedded-Jmol-instance-when-accessing-PDB-via-URL.-td29492618.html
+        	//String fullname = htmlName + "__" + Math.random() + "__";
+        	//JmolViewer viewer = JmolViewer.allocateviewer(yourApplet, null, fullName, documentBase, codeBase, "-applet", null)
+        	
+        	//String fullname = htmlName + "__" + Math.random() + "__";
+        	viewer = JmolViewer.allocateViewer(this, adapter, null, null, null, "-applet", null, null);
         }
  
         public JmolViewer getViewer() 
@@ -653,7 +687,6 @@ public class Molly extends Applet
         public void executeCmd(String rasmolScript){
             viewer.evalString(rasmolScript);
         }
- 
  
         final Dimension currentSize = new Dimension();
         final Rectangle rectClip = new Rectangle();
@@ -667,6 +700,10 @@ public class Molly extends Applet
         }
     }
 		
+	/**
+	 * ButtonListener handles all of the interaction with GUI components in the Applet.  
+	 * @author Josh Kuestersteffen
+	 */
 	private class ButtonListener implements ActionListener 
 	{
 		public void actionPerformed(ActionEvent e) 
@@ -696,11 +733,9 @@ public class Molly extends Applet
 							"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
 				    view1.evalString("try{load \"$"+currentMolecule+"\"}catch(e){}");
 				}
-				
-				      
 			}
 			
-			//Called if the ROTATE On/Off button is hit to spin both molecules.
+			//Called if the SPIN On/Off button is hit to spin both molecules.
 			else if(e.getSource()== spinButton)
 			{
 				if(rotateOn)
@@ -757,7 +792,6 @@ public class Molly extends Applet
 						"zChange[@i] = {atomno = i}.z / 100;"+
 					"}"+
 					
-					
 					//Basically animate the inversion.
 					"for(j=0; j<200; j++)"+ //j is the number of frames
 					"{"+
@@ -777,15 +811,13 @@ public class Molly extends Applet
 						"delay 0.025;"+  //Controls the fps (Essentially the time between frames)
 					"}"
 					//"echo \"\";"	
-				);
-								
+				);		
 				inverted = !inverted;
 			}
 			
 			//Called if the ROTATE and REFLECT button is hit.
 			else if(e.getSource() == rotRefButton)
 			{
-				       	
             	rotationAmount = 0;
                 switch(rotRefBox.getSelectedIndex())
                 {
@@ -823,7 +855,6 @@ public class Molly extends Applet
                             rotationAmount = 36;
                             break;
                 }
-            	           	
       
                	//First we need to get the rotation angles so that we can align the molecule
             	//  with the y axis so that we just have to modify y-coordinates
@@ -847,10 +878,12 @@ public class Molly extends Applet
 				//This just sends one big segment of commands to jmol and lets it evaluate it...
 				view1.evalString(
 			
-					//First align all the atoms to the y axis for measurements.
+					//Perform the *********ROTATION*********:
 					"select all;" +
 					"rotateSelected $axis1 "+ rotationAmount+" 30;"+
 					
+					//Perform the *********REFLECTION*********
+					//Align all the atoms to the y axis for measurements.
 					"rotateSelected {0,0,0} {0,1,0} "+alpha+";" +
 					"rotateSelected {0,0,0} {0,0,1} "+beta+";"+
 					
@@ -866,9 +899,7 @@ public class Molly extends Applet
 					//Reset the atoms alignment so we can begin the for loop...
 					"rotateSelected {0,0,0} {0,0,1} "+negBeta+";"+
 					"rotateSelected {0,0,0} {0,1,0} "+negAlpha+";"+
-															
-					
-					
+							
 					//Basically animate the inversion.
 					"for(j=0; j<200; j++)"+ //j is the number of frames
 					"{" +
@@ -993,10 +1024,7 @@ public class Molly extends Applet
 					//Reset the atoms alignment so we can begin the for loop...
 					"rotateSelected {0,0,0} {0,0,1} "+negBeta+";"+
 					"rotateSelected {0,0,0} {0,1,0} "+negAlpha+";"+
-															
-					
-					
-					//Basically animate the inversion.
+												//Basically animate the inversion.
 					"for(j=0; j<200; j++)"+ //j is the number of frames
 					"{" +
 						//Align everything to the y axis so that we can translate along the y.
@@ -1042,8 +1070,7 @@ public class Molly extends Applet
 			{
                 view1.evalString("reset;");  //Resets the view.
                 
-                //Check to see if there have been any transformations...  if so make undo them
-
+                //Check to see if there have been any transformations...  if so undo them
                 if(reflected)
                 {
                     view1.evalString("load \":"+currentMolecule+"\";");
@@ -1065,10 +1092,12 @@ public class Molly extends Applet
 					inverted = !inverted;
                 }
 			}
+			//Updates the slider with a new number from the Axis rotation text field.
             else if(e.getSource() == axisRotField)
             {
             	axisRotSlider.setValue(Integer.parseInt(axisRotField.getText()));
             }
+			//Turns the Perspective Link on or off.
             else if(e.getSource() == perspectiveLinkBox)
             {
             	perspectiveLink = !perspectiveLink;
@@ -1092,43 +1121,43 @@ public class Molly extends Applet
 
 						//then we just feed that command into view0
 						view0.evalString(stateCommand);
-					
 					}
             	}
-            	
             }
 			
+			//Turns the axis on or off.
             else if(e.getSource() == showAxis)
             {
             	axisShown = !axisShown;
             	if(axisShown == true) drawAxis();
             	else view1.evalString("draw axis1 DELETE");
             }
+			
+			//Turns the plane on or off.
             else if(e.getSource() == showPlane)
             {
             	planeShown = !planeShown;
             	
-            	int scale = (int)Math.ceil(axisRadius * 180.5);
-            	
             	if(planeShown == true) drawCircle();
             	else view1.evalString("draw circle DELETE");
             }
+			//Aligns the molecule's x axis to axis1.
             else if(e.getSource() == xAlignAxis)
             {
-            	axisRotSlider.setValue(0);
-            	
+            	//First we set the axis1 so that it is along the x axis/
+            	axisRotSlider.setValue(0);            	
             	axisEnd0 = new Vector3(axisRadius, 0, 0);
             	
-            	view1.evalString(
-            			"reset;");
-            	
+            	//Then we reset the molecule perspective so that the axes are aligned.
+            	view1.evalString("reset;");
+      
             	if(perspectiveLink) view0.evalString("reset;");
             	
             	if(axisShown)drawAxis();
             	if(planeShown)drawCircle();
-            	            	
-            	
             }
+			
+			//Aligns the molecule's y axis to axis1.
             else if(e.getSource() == yAlignAxis)
             {
             	axisRotSlider.setValue(0);
@@ -1137,7 +1166,7 @@ public class Molly extends Applet
             	
             	view1.evalString(
             			"reset;" +
-            			"rotate z 90;");
+            			"rotate z 90;");  //We must rotate the molecule so that the y axis is aligned.
             	            	
             	if(perspectiveLink) 
             	{
@@ -1149,6 +1178,8 @@ public class Molly extends Applet
             	if(axisShown)drawAxis();
             	if(planeShown)drawCircle();
             }
+			
+			//Aligns the molecule's z axis to axis1.
             else if(e.getSource() == zAlignAxis)
             {
             	axisRotSlider.setValue(0);
@@ -1157,7 +1188,7 @@ public class Molly extends Applet
             	
             	view1.evalString(
             			"reset;" +
-            			"rotate y 90;");
+            			"rotate y 90;");//We must rotate the molecule so that the z axis is aligned.
             	
             	if(perspectiveLink) 
             	{
@@ -1178,49 +1209,30 @@ public class Molly extends Applet
             {
             	loadFromPubchem = false;
             }
+			//Locks the axis rotation so that it does not move when the perspective is changed. 
             else if(e.getSource() == axisRotLockBox)
             {
             	axisRotLock = !axisRotLock;
             }
-            else if(e.getSource() == next)
-            {
-            	//view1.evalString("show STATE;");
-            }
-            else if(e.getSource() == previous) //Right now I am just using this as a testing grounds for new features.
-			{            	
-            	
-            
-
-				///////////Possible Useful Commands\\\\\\\\\\\\\\\
-				//view1.getModelSetPathName();  \\Gets the URL for the current molecule at pubchem...
-				//view1.isScriptExecuting()  //returns true if no script is executing...
-				//view1.getBooleanProperty("__appletReady");
-				//view1..getBooleanProperty("ShowAxes");???
-				
-				
-				//draw axis1 DELETE
-				//JOptionPane.showMessageDialog(null, callbackString);				
-				//view1.evalString("echo \"Hello World\"");
-				
-				//view1.setRotation(javax.vecmath.Matrix3f matrixRotation) //Could we possibly use matricies to move the atoms?
-				//view1.getAtomPoint3f(int);
-				//view1.getBooleanProperty(String)
-				//view1.getData(String atomExpression, String type)
-				//view1.setBooleanProperty(java.lang.String propertyName, boolean value)
-				//view1.evalString("print \"Stuff\"");
-				//view1.evalString("try{load \"garbage\"}catch(e){prompt \"Molecule not found.\"}");
-				//view1.evalString("show orientation moveto;");
-				//view1.evalString("axes on; axes 4;");
-				//draw POLYGON 4 {0 0 0} {1 1 1} {1 2 1} {0 5 0} 2 [0 1 2 6] [0 3 2 6] mesh nofill
-			}
 		}		
 	}
 	
+	/**
+	 * This class listens to Jmol views and responds when certain events occur.  
+	 * @author Josh Kuestersteffen
+	 */
 	public class MyJmolListener implements JmolStatusListener
 	{
 		public String echoText = "";
 		
 		@Override
+		/**
+		 * This Method performs an action when it receives a callback from the Jmol viewer.  
+		 * @param type  The type of callback that is coming from the Jmol viewer.  See the list of 
+		 * types in the notifyEnabled() method.  
+		 * @param data  The data accompanying the callback.  It should be interpreted differently
+		 * depending upon what type of callback it is accompanying.  
+		 */
 		public void notifyCallback(EnumCallback type, Object[] data) 
 		{
 			@SuppressWarnings("unused")
@@ -1231,19 +1243,14 @@ public class Molly extends Applet
 			switch(type)
 			{
 				case ATOMMOVED:
-					//System.out.println("Atom Moved...");
 					break;
 				case MESSAGE:
-					//System.out.println(strInfo);
-					
 					break;
-				case CLICK:
-			       
-					
+				case CLICK: //Called whenever the Jmol screen is clicked.  (The mouse adjusts the molecule orientation)
+					//This is where we are able to implement the PERSPECTIVE LINK
 					// x, y, action, int[] {action}
 			        // the fourth parameter allows an application to change the action
 					callbackString = "x=" + data[1] + " y=" + data[2] + " action=" + data[3] + " clickCount=" + data[4];
-					
 					
 					//This is where we handle the linking of perspectives for the jmol windows
 					//Every time there is a mouse event with view1 this will run.
@@ -1259,13 +1266,11 @@ public class Molly extends Applet
 								stateCommand.indexOf("moveto 0.0"), 
 								stateCommand.indexOf("slab")); 
 
-						//then we just feed that command into view0
-						
+						//then we just feed that command into view0						
 						if(perspectiveLink)
 						{
 							view0.evalString(stateCommand);
 						}
-						
 						
 						if(axisRotLock)
 						{
@@ -1295,7 +1300,7 @@ public class Molly extends Applet
 					    	}
 						   	
 					    	//Store the axis values and the angle of rotation.
-					    	// u,v,w is the axis of rotation and a is the rotation ammount in degrees
+					    	// u,v,w is the axis of rotation and a is the rotation amount in degrees
 							uPerspective = vals[1];
 							vPerspective = vals[2];
 							wPerspective = vals[3];
@@ -1325,28 +1330,18 @@ public class Molly extends Applet
 							axisEnd0.x = rotVector[0];
 							axisEnd0.y = rotVector[1];
 							axisEnd0.z = rotVector[2];	
-							//axisEnd1.x = -rotVector[0];
-							//axisEnd1.y = -rotVector[1];
-							//axisEnd1.z = -rotVector[2];	
 							
 							if(axisShown)drawAxis();
-			            	if(planeShown)drawCircle();						
-							
+			            	if(planeShown)drawCircle();		
 						}
-						
 					}
 					break; 
 				case ECHO:
-					
 					echoText = strInfo;
-
-					//JOptionPane.showMessageDialog(null, strInfo);
 					break;
 				case APPLETREADY:
-					//JOptionPane.showMessageDialog(null, "Applet is Ready");
 					break;
 				case LOADSTRUCT: //Called when the applet is finished loading the new mol.
-
 					//When this case has been hit twice, then it will set both of the
 					//  loading booleans to false.  This is when you know they are both
 					//  done loading...
@@ -1441,7 +1436,7 @@ public class Molly extends Applet
 		public void showUrl(String arg0) {}	
 	}
 	
-	/*
+	/**
 	 * This class listens to the sliders (for the planes and axes)  and will adjust things 
 	 *   as you move the slider bars.
 	 */
