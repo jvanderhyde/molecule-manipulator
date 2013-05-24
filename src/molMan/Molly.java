@@ -551,6 +551,40 @@ public class Molly extends Applet
         this.add(bottom);
         
 	}
+    
+    /**
+     * Called automatically by the browser when the applet is destroyed.
+     * Also called manually by an application using the applet.
+     */
+    public void destroy()
+    {
+        killJmolThreads();
+    }
+    
+    /**
+     * Looks for threads started by JMOL that need to be killed
+     * when the applet is destroyed.
+     * JMOL does not clean up after itself.
+     */
+    private void killJmolThreads()
+    {
+        Thread[] threads=new Thread[20];
+        int numThreads = Thread.enumerate(threads);
+        for (int i=0; i<numThreads; i++)
+        {
+            Thread t=threads[i];
+            if (t != null)
+            {
+                String name = t.getName();
+                //System.out.println(name);
+                if (name.equals("HoverWatcher"))
+                    t.interrupt();
+            }
+        }
+
+    }
+        
+    
 	
 	/**
 	 *  This method gets called by Jmol when Jmol is done loading the molecule 
