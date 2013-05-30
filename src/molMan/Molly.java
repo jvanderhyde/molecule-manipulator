@@ -34,6 +34,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.vecmath.AxisAngle4f;
 import org.jmol.adapter.smarter.SmarterJmolAdapter;
 import org.jmol.api.JmolAdapter;
 import org.jmol.api.JmolStatusListener;
@@ -775,38 +776,54 @@ public class Molly extends Applet
             this.executeCmd(moveToCommand);
         }
  
-        private String getMoveToScript()
+        private Object getOrientationInfoObject(String key)
         {
-            String error = "";
+            Hashtable h;
             Object data = viewer.getProperty("object", "orientationInfo", null);
             if (data instanceof Hashtable)
+                h=(Hashtable)data;
+            else
+                throw new IllegalStateException("Orientation info is not a Hashtable, it is a "+data.getClass().toString());
+
+            if (h.containsKey(key))
             {
-                Hashtable h=(Hashtable)data;
-                if (h.containsKey("moveTo"))
-                {
-                    Object o = h.get("moveTo");
-                    if (o instanceof String)
-                    {
-                        String s=(String)o;
-                        s=s.replaceFirst("1", "0");
-                        return s;
-                    }
-                    else
-                        error = "moveTo is a "+o.getClass();
-                }
-                else
-                {
-                    for (Object o:h.keySet())
-                        error += o.toString()+"\n";
-                    error += "\n";
-                }
+                Object o = h.get(key);
+                return o;
             }
             else
-                error = data.getClass().toString();
+            {
+                String error = "Unknown key: "+key+" Possible keys:";
+                for (Object o:h.keySet())
+                    error += " "+o.toString()+" ";
+                throw new IllegalStateException(error);
+            }
+        }
+        
+        private String getMoveToScript()
+        {
+            Object o=getOrientationInfoObject("moveTo");
+            if (o instanceof String)
+            {
+                String s=(String)o;
+                s=s.replaceFirst("1", "0");
+                return s;
+            }
+            else
+                throw new IllegalStateException("moveTo is a "+o.getClass());
+        }
 
-            //throw new IllegalStateException(error);
-            System.out.println(error);
-            return null;
+        public float[] getAxisAngle()
+        {
+            Object o=getOrientationInfoObject("axisAngle");
+            if (o instanceof AxisAngle4f)
+            {
+                AxisAngle4f aa = (AxisAngle4f)o;
+                float[] aaa = new float[4];
+                aa.get(aaa);
+                return aaa;
+            }
+            else
+                throw new IllegalStateException("axisAngle is a "+o.getClass());
         }
 
         final Dimension currentSize = new Dimension();
@@ -1356,95 +1373,60 @@ public class Molly extends Applet
 					break;
 				case CLICK: //Called whenever the Jmol screen is clicked.  (The mouse adjusts the molecule orientation)
 					//This is where we are able to implement the PERSPECTIVE LINK
-					// x, y, action, int[] {action}
-			        // the fourth parameter allows an application to change the action
-					callbackString = "x=" + data[1] + " y=" + data[2] + " action=" + data[3] + " clickCount=" + data[4];
 					
                     //Perspective linking is now handled by the copycat because
                     // of the terrible lag associated with the old method.
+                    // It could be handled like this:
+                    //    jmolPanel0.copyOrientation(jmolPanel1);
+                    // but there is still a slight lag.
+                    
+                    //Axis lock is also handled without the use of "show STATE;".
+                    
 					//This is where we handle the linking of perspectives for the jmol windows
 					//Every time there is a mouse event with view1 this will run.
-					/*view1.evalString("show STATE;");  //Get the current perspective
-					
-					if(echoText != "")  //Make sure the String has been updated
-					{
-						//First we need to get the exact command we need out of the state String.
-						String stateCommand = echoText.substring(
-								echoText.indexOf("function _setPerspectiveState()"), 
-								echoText.indexOf("function _setSelectionState()")-1);
-						stateCommand = stateCommand.substring(
-								stateCommand.indexOf("moveto 0.0"), 
-								stateCommand.indexOf("slab")); 
+                    if(axisRotLock)
+                    {
+                        //We also need to adjust the location of axis1
+                        //Its rotation should be opposite to that of the molecule.  
+                        //This method of vector rotation from http://www.blitzbasic.com/Community/posts.php?topic=57616
 
-						//then we just feed that command into view0						
-						if(perspectiveLink)
-						{
-							view0.evalString(stateCommand);
-						}
-						
-						if(axisRotLock)
-						{
-							//We also need to adjust the location of axis1
-							//Its rotation should be opposite to that of the molecule.  
-							//This method of vector rotation from http://www.blitzbasic.com/Community/posts.php?topic=57616
-							
-							//We need to pull the axis coords out of the String
-							//To do this, we will use a scanner, but first we have to get the
-							//  } out of the way because for some reason it screws things up.
-							Scanner sc = new Scanner(stateCommand).useDelimiter("}");
-					    	String temp = "";
-					    	while(sc.hasNext()){ temp+= sc.next();}
-					    	   
-					    	//Now we can scan the text for the values we need
-					    	sc = new Scanner(temp);
-					    	int counter = 0;
-					    	double[] vals = new double[5];
-					    	while(sc.hasNext() && counter<5)
-					    	{
-					    		if(sc.hasNextDouble())
-					    		{
-					    			vals[counter] = sc.nextDouble();
-					    			counter++;
-					    		}
-					    		else sc.next();				    		
-					    	}
-						   	
-					    	//Store the axis values and the angle of rotation.
-					    	// u,v,w is the axis of rotation and a is the rotation amount in degrees
-							uPerspective = vals[1];
-							vPerspective = vals[2];
-							wPerspective = vals[3];
-							aPerspective = vals[4];
-							
-							//Sets the original location of the drawn axis.
-							//We cannot just set these values, because then we cannot control the length of the
-							//  axis depending on the size of the molecule.  We will load the axis as usual and
-							//  then rotate it where we want it.  
-							
-							Vector3 orig = new Vector3(axisRadius, 0, 0);
-							
-							Matrix3x3 preliminaryYRot = Matrix3x3.rotationMatrix(yAxisRot);
-							
-							orig = preliminaryYRot.transform(orig);
-							
-							double x = orig.x;
-							double y = 0;
-							double z = orig.y;
-							
-							//Create the matrix to multiply our axis vector by.
-							RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, Math.toRadians(-aPerspective));
-							
-							//do the matrix multiplication/
-							double[] rotVector = rotMat.timesXYZ(x, y, z);
-																		
-							axisEnd0.x = rotVector[0];
-							axisEnd0.y = rotVector[1];
-							axisEnd0.z = rotVector[2];	
-							
-							if(axisShown)drawAxis();
-			            	if(planeShown)drawCircle();		
-						}
-					}*/
+                        float[] aa = jmolPanel1.getAxisAngle();
+
+                        //Store the axis values and the angle of rotation.
+                        // u,v,w is the axis of rotation and a is the rotation amount in degrees
+                        uPerspective = aa[0];
+                        vPerspective = aa[1];
+                        wPerspective = aa[2];
+                        aPerspective = aa[3];
+
+                        //Sets the original location of the drawn axis.
+                        //We cannot just set these values, because then we cannot control the length of the
+                        //  axis depending on the size of the molecule.  We will load the axis as usual and
+                        //  then rotate it where we want it.  
+
+                        Vector3 orig = new Vector3(axisRadius, 0, 0);
+
+                        Matrix3x3 preliminaryYRot = Matrix3x3.rotationMatrix(yAxisRot);
+
+                        orig = preliminaryYRot.transform(orig);
+
+                        double x = orig.x;
+                        double y = 0;
+                        double z = orig.y;
+
+                        //Create the matrix to multiply our axis vector by.
+                        RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, -aPerspective);
+
+                        //do the matrix multiplication/
+                        double[] rotVector = rotMat.timesXYZ(x, y, z);
+
+                        axisEnd0.x = rotVector[0];
+                        axisEnd0.y = rotVector[1];
+                        axisEnd0.z = rotVector[2];	
+
+                        if(axisShown)drawAxis();
+                        if(planeShown)drawCircle();		
+                    }
 					break; 
 				case ECHO:
 					echoText = strInfo;
