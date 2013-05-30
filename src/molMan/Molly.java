@@ -10,6 +10,11 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelListener;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Scanner;
@@ -121,6 +126,7 @@ public class Molly extends Applet
     private MyChangeListener sliderListener = new MyChangeListener();
     private MyJmolListener jListen0 = new MyJmolListener();
     private MyJmolListener jListen1 = new MyJmolListener();
+    private MouseCopier copycat = null;;
      
     /**
      * Runs when the applet is initialized.  It sets up the Jmol viewers and then loads up the GUI.
@@ -137,6 +143,8 @@ public class Molly extends Applet
         jmolPanel1.setPreferredSize(new Dimension(jmolWidth, jmolWidth));
 
         setUpGui();  //Sets up the Swing user interface.
+        
+        setUpMouseListenersForLinkedRotation(); 
         
         loadStructure();  //Finishes initialising the Jmol viewers and load the first molecule.
         
@@ -552,6 +560,40 @@ public class Molly extends Applet
         
 	}
     
+    private void setUpMouseListenersForLinkedRotation()
+    {
+        //Get Jmol's mouse listeners
+        MouseMotionListener[] mmListeners = jmolPanel0.getMouseMotionListeners();
+        MouseListener[] mListeners = jmolPanel0.getMouseListeners();
+        MouseWheelListener[] mwListeners = jmolPanel0.getMouseWheelListeners();
+        MouseMotionListener mml=null;
+        MouseListener ml=null;
+        MouseWheelListener mwl=null;
+        if (mmListeners.length>0)
+            mml=mmListeners[0];
+        if (mListeners.length>0)
+            ml=mListeners[0];
+        if (mwListeners.length>0)
+            mwl=mwListeners[0];
+        
+        //Copy the mouse listener behaviors into the linked view
+        copycat = new MouseCopier(ml,mml,null);
+        jmolPanel1.addMouseListener(copycat);
+        jmolPanel1.addMouseMotionListener(copycat);
+        //we don't use the scroll wheel because behavior is weird
+        
+        //Snap the linked view when the driving view is clicked
+        jmolPanel1.addMouseListener(new MouseAdapter()
+        {
+            @Override
+            public void mousePressed(MouseEvent evt)
+            {
+                if (Molly.this.perspectiveLink)
+                    jmolPanel0.copyOrientation(jmolPanel1);
+            }
+        });
+    }
+        
     /**
      * Called automatically by the browser when the applet is destroyed.
      * Also called manually by an application using the applet.
@@ -721,7 +763,52 @@ public class Molly extends Applet
         public void executeCmd(String rasmolScript){
             viewer.evalString(rasmolScript);
         }
+        
+        /**
+         * Sets the current orientation (rotation) of this Jmol viewer
+         * to the orientation of the given viewer.
+         * @param source The JmolPanel whose orientation is to be copied
+         */
+        public void copyOrientation(JmolPanel source)
+        {
+            String moveToCommand = source.getMoveToScript();
+            this.executeCmd(moveToCommand);
+        }
  
+        private String getMoveToScript()
+        {
+            String error = "";
+            Object data = viewer.getProperty("object", "orientationInfo", null);
+            if (data instanceof Hashtable)
+            {
+                Hashtable h=(Hashtable)data;
+                if (h.containsKey("moveTo"))
+                {
+                    Object o = h.get("moveTo");
+                    if (o instanceof String)
+                    {
+                        String s=(String)o;
+                        s=s.replaceFirst("1", "0");
+                        return s;
+                    }
+                    else
+                        error = "moveTo is a "+o.getClass();
+                }
+                else
+                {
+                    for (Object o:h.keySet())
+                        error += o.toString()+"\n";
+                    error += "\n";
+                }
+            }
+            else
+                error = data.getClass().toString();
+
+            //throw new IllegalStateException(error);
+            System.out.println(error);
+            return null;
+        }
+
         final Dimension currentSize = new Dimension();
         final Rectangle rectClip = new Rectangle();
  
@@ -1134,29 +1221,16 @@ public class Molly extends Applet
 			//Turns the Perspective Link on or off.
             else if(e.getSource() == perspectiveLinkBox)
             {
-            	perspectiveLink = !perspectiveLink;
+            	perspectiveLink = perspectiveLinkBox.isSelected();
             	
-            	//If this is turning the perspective link on, then we will go ahead and adjust view0.
-            	if(perspectiveLink)
-            	{
-            		//This is where we handle the linking of perspectives for the jmol windows
-					//Every time there is a mouse event with view1 this will run.
-					view1.evalString("show STATE;");  //Get the current perspective
-					
-					if(jListen1.echoText != "")  //Make sure the String has been updated
-					{
-						//First we need to get the exact command we need out of the state String.
-						String stateCommand = jListen1.echoText.substring(
-								jListen1.echoText.indexOf("function _setPerspectiveState()"), 
-								jListen1.echoText.indexOf("function _setSelectionState()")-1);
-						stateCommand = stateCommand.substring(
-								stateCommand.indexOf("moveto 0.0"), 
-								stateCommand.indexOf("slab")); 
-
-						//then we just feed that command into view0
-						view0.evalString(stateCommand);
-					}
-            	}
+                if (perspectiveLink)
+                {
+                    copycat.activate();
+                    //If this is turning the perspective link on, then we will go ahead and adjust view0.
+                    jmolPanel0.copyOrientation(jmolPanel1);
+                }
+                else
+                    copycat.deactivate();
             }
 			
 			//Turns the axis on or off.
@@ -1286,9 +1360,11 @@ public class Molly extends Applet
 			        // the fourth parameter allows an application to change the action
 					callbackString = "x=" + data[1] + " y=" + data[2] + " action=" + data[3] + " clickCount=" + data[4];
 					
+                    //Perspective linking is now handled by the copycat because
+                    // of the terrible lag associated with the old method.
 					//This is where we handle the linking of perspectives for the jmol windows
 					//Every time there is a mouse event with view1 this will run.
-					view1.evalString("show STATE;");  //Get the current perspective
+					/*view1.evalString("show STATE;");  //Get the current perspective
 					
 					if(echoText != "")  //Make sure the String has been updated
 					{
@@ -1368,7 +1444,7 @@ public class Molly extends Applet
 							if(axisShown)drawAxis();
 			            	if(planeShown)drawCircle();		
 						}
-					}
+					}*/
 					break; 
 				case ECHO:
 					echoText = strInfo;
