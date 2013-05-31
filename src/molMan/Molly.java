@@ -17,7 +17,6 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelListener;
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.Scanner;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -1348,7 +1347,6 @@ public class Molly extends Applet
 	 */
 	public class MyJmolListener implements JmolStatusListener
 	{
-		public String echoText = "";
 		
 		@Override
 		/**
@@ -1429,7 +1427,6 @@ public class Molly extends Applet
                     }
 					break; 
 				case ECHO:
-					echoText = strInfo;
 					break;
 				case APPLETREADY:
 					break;
@@ -1540,7 +1537,7 @@ public class Molly extends Applet
 		    {
 		    	//This is where we handle the linking of perspectives for the jmol windows
 				//Every time there is a mouse event with view1 this will run.
-				view1.evalString("show STATE;");  //Get the current perspective
+				//view1.evalString("show STATE;");  //Get the current perspective
 				
 				int yValue = axisRotSlider.getValue();
 		    	axisRotField.setText(""+yValue);
@@ -1551,88 +1548,57 @@ public class Molly extends Applet
 		    	//Make sure we keep track of just how far we have rotated...
 		    	yAxisRot = axisRotSlider.getValue();
 				
-				if(jListen1.echoText != "")  //Make sure the String has been updated
-				{
-					//First we need to get the exact command we need out of the state String.
-					String stateCommand = jListen1.echoText.substring(
-							jListen1.echoText.indexOf("function _setPerspectiveState()"), 
-							jListen1.echoText.indexOf("function _setSelectionState()")-1);
-					stateCommand = stateCommand.substring(
-							stateCommand.indexOf("moveto 0.0"), 
-							stateCommand.indexOf("slab")); 
+                //We also need to adjust the location of axis1
+                //Its rotation should be opposite to that of the molecule.  
+                //This method of vector rotation from http://www.blitzbasic.com/Community/posts.php?topic=57616
 
-					
-					//We also need to adjust the location of axis1
-					//Its rotation should be opposite to that of the molecule.  
-					//This method of vector rotation from http://www.blitzbasic.com/Community/posts.php?topic=57616
-					
-					//We need to pull the axis coords out of the String
-					//To do this, we will use a scanner, but first we have to get the
-					//  } out of the way because for some reason it screws things up.
-					Scanner sc = new Scanner(stateCommand).useDelimiter("}");
-			    	String temp = "";
-			    	while(sc.hasNext()){ temp+= sc.next();}
-			    	   
-			    	//Now we can scan the text for the values we need
-			    	sc = new Scanner(temp);
-			    	int counter = 0;
-			    	double[] vals = new double[5];
-			    	while(sc.hasNext() && counter<5)
-			    	{
-			    		if(sc.hasNextDouble())
-			    		{
-			    			vals[counter] = sc.nextDouble();
-			    			counter++;
-			    		}
-			    		else sc.next();				    		
-			    	}
-				   	
-			    	//Store the axis values and the angle of rotation.
-			    	// u,v,w is the axis of rotation and a is the rotation ammount in degrees
-					uPerspective = vals[1];
-					vPerspective = vals[2];
-					wPerspective = vals[3];
-					aPerspective = vals[4];
-					
-					//Sets the original location of the drawn axis.
-					//We cannot just set these values, because then we cannot control the length of the
-					//  axis depending on the size of the molecule.  We will load the axis as usual and
-					//  then rotate it where we want it.  
-					
-					Vector3 orig = new Vector3(axisRadius, 0, 0);
-					
-					Matrix3x3 preliminaryYRot = Matrix3x3.rotationMatrix(yAxisRot);
-					
-					orig = preliminaryYRot.transform(orig);
-					
-					double x = orig.x;
-					double y = 0;
-					double z = orig.y;
-					//Create the matrix to multiply our axis vector by.
-					
-					//Wierd things happen when this is run without the Perspective state being changed.
-					//  So we will only modify from the perspective if there is actually something that has happened.
-					if(!(uPerspective==0.0 && wPerspective ==0.0 ))
-					{
-						RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, Math.toRadians(-aPerspective));
-						
-						//do the matrix multiplication
-						double[] rotVector = rotMat.timesXYZ(x, y, z);
-						
-						axisEnd0.x = rotVector[0];
-						axisEnd0.y = rotVector[1];
-						axisEnd0.z = rotVector[2];	
-					}
-					else
-					{
-						axisEnd0.x = x;
-						axisEnd0.y = y;
-						axisEnd0.z = z;	
-					}																
-										
-					if(axisShown)drawAxis();
-	            	if(planeShown)drawCircle();
-				}
+                float[] aa = jmolPanel1.getAxisAngle();
+
+                //Store the axis values and the angle of rotation.
+                // u,v,w is the axis of rotation and a is the rotation amount in degrees
+                uPerspective = aa[0];
+                vPerspective = aa[1];
+                wPerspective = aa[2];
+                aPerspective = aa[3];
+
+                //Sets the original location of the drawn axis.
+                //We cannot just set these values, because then we cannot control the length of the
+                //  axis depending on the size of the molecule.  We will load the axis as usual and
+                //  then rotate it where we want it.  
+
+                Vector3 orig = new Vector3(axisRadius, 0, 0);
+
+                Matrix3x3 preliminaryYRot = Matrix3x3.rotationMatrix(yAxisRot);
+
+                orig = preliminaryYRot.transform(orig);
+
+                double x = orig.x;
+                double y = 0;
+                double z = orig.y;
+                //Create the matrix to multiply our axis vector by.
+
+                //Wierd things happen when this is run without the Perspective state being changed.
+                //  So we will only modify from the perspective if there is actually something that has happened.
+                if(!(uPerspective==0.0 && wPerspective ==0.0 ))
+                {
+                    RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, Math.toRadians(-aPerspective));
+
+                    //do the matrix multiplication
+                    double[] rotVector = rotMat.timesXYZ(x, y, z);
+
+                    axisEnd0.x = rotVector[0];
+                    axisEnd0.y = rotVector[1];
+                    axisEnd0.z = rotVector[2];	
+                }
+                else
+                {
+                    axisEnd0.x = x;
+                    axisEnd0.y = y;
+                    axisEnd0.z = z;	
+                }																
+
+                if(axisShown)drawAxis();
+                if(planeShown)drawCircle();
 		    }
 		}
 	}
