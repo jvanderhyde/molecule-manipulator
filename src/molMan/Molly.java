@@ -650,22 +650,21 @@ public class Molly extends Applet
         {
         	//http://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/SDF?record_type=3d
             urlName0 = urlName0.substring(55, urlName0.length()-19); 
-            
             urlName0 = urlName0.replaceAll("%20", " ");//Puts spaces back in if the name is more then one word
-
-            currentMolecule = urlName0;
-            currentMolLabel.setText("Current Molecule: "+currentMolecule);
         }
         else //Load from NCI/NIH
         {
         	//http://cactus.nci.nih.gov/chemical/structure/PF5/file?format=sdf&get3d=True
         	urlName0 = urlName0.substring(45, urlName0.length()-27); 
-
-        	 urlName0 = urlName0.replaceAll("%20", " ");
-        	
-            currentMolecule = urlName0;
-            currentMolLabel.setText("Current Molecule: "+currentMolecule);
+        	urlName0 = urlName0.replaceAll("%20", " ");
         }
+        currentMolecule = urlName0;
+        currentMolLabel.setText("Current Molecule: "+currentMolecule);
+        
+        //Relayout the applet becasue the label may have changed size
+        currentMolLabel.invalidate();
+        this.validate();
+        
         resetAxisSize();  //Makes sure that the axis is the right length for the new molecule.
 	}
 		
