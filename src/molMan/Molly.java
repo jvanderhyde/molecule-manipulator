@@ -69,14 +69,10 @@ public class Molly extends Applet
 	private boolean axisShown = false;
 	private boolean planeShown = false;
 	private boolean perspectiveLink = true;
-	private boolean loadingMol0 = false;//These are both used to be able to tell when both Jmol windows are finished loading
-    @SuppressWarnings("unused")
-	private boolean loadingMol1 = false;
+    private int numMolsLoaded = 0; //used to be able to tell when both Jmol windows are finished loading
     private boolean loadFromPubchem = false;
     private boolean axisRotLock = true;
     private String currentMolecule = "Caffeine";
-    @SuppressWarnings("unused")
-	private String callbackString = "Nothing";
     private String[] rotRefString = {"Rotation & Reflection",
             "s1: 360 deg", "s2: 180 deg", "s3: 120 deg", "s4: 90 deg", "s5: 72 deg", "s6: 60 deg",
             "s7: 51 deg", "s8: 45 deg", "s9: 40 deg", "s10: 36 deg"};
@@ -90,7 +86,6 @@ public class Molly extends Applet
 	private static final long serialVersionUID = 1L;	
     private float axisRadius = 5.539443f;
 	private Vector3 axisEnd0 = new Vector3(axisRadius, 0, 0);
-    protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
     double uPerspective = 0;
 	double vPerspective = 0;
 	double wPerspective = 0;
@@ -159,11 +154,9 @@ public class Molly extends Applet
         view0.setJmolStatusListener(jListen0);
         view1 = jmolPanel1.getViewer();        
         view1.setJmolStatusListener(jListen1);
-                      
-        loadingMol0 = true;
-        loadingMol1 = true;
         
         //Load up the initial molecules...
+        numMolsLoaded = 0;
         view0.evalString("load \"$Caffeine\";");        
         view1.evalString("load \"$Caffeine\";");
     }
@@ -738,11 +731,9 @@ public class Molly extends Applet
 			if (e.getSource() == selectButton || e.getSource() == input)
 			{
 				currentMolecule = input.getText();
+                numMolsLoaded = 0;
 				
-				//Check the evalString method in JMol 
-				loadingMol0=true;
-				loadingMol1=false;
-				
+				//Tell Jmol to try to load the specified molecule 
 				if(loadFromPubchem)
 				{
 					view0.evalString(
@@ -1248,7 +1239,6 @@ public class Molly extends Applet
 		public void notifyCallback(EnumCallback type, Object[] data) 
 		{
 			@SuppressWarnings("unused")
-			String callback = callbacks.get(type);
 			String strInfo = (data == null || data[1] == null ? null : data[1]
 			          .toString());
 			
@@ -1320,17 +1310,13 @@ public class Molly extends Applet
 				case APPLETREADY:
 					break;
 				case LOADSTRUCT: //Called when the applet is finished loading the new mol.
-					//When this case has been hit twice, then it will set both of the
-					//  loading booleans to false.  This is when you know they are both
-					//  done loading...
-			
-					//if it has been called once, then set the second one false
-					if(!loadingMol0)
-					{
-						loadingMol1 = false;
-						changeCurrentMolLabel();
-					}
-					else loadingMol0 = false;
+					//When this case has been hit twice, then it will increment the variable
+                    //twice.  This is when you know they are both done loading.
+                    numMolsLoaded++;
+                    if (numMolsLoaded >= 2)
+                    {
+                        changeCurrentMolLabel();
+                    }
 					break;
 			}
 		}
@@ -1340,32 +1326,26 @@ public class Molly extends Applet
 		{
 			switch (type) 
 			{
+			  case LOADSTRUCT:
+			  case CLICK:
+				  return true;
 			  case ANIMFRAME:
 			  case ECHO:
-				  return true;
 			  case ERROR:
 			  case EVAL:
-			  case LOADSTRUCT:
-				  return true;
 			  case MEASURE:
 			  case MESSAGE:
-				  return true;
 			  case PICK:
 			  case SYNC:
 			  case SCRIPT:
-			    return true;
 			  case APPLETREADY:
-				  return true;// Jmol 12.1.48
-			  case ATOMMOVED:  // Jmol 12.1.48
-				  return true;
-			  case CLICK:
-				  return true;
+			  case ATOMMOVED:
 			  case HOVER:
 			  case MINIMIZATION:
 			  case RESIZE:
-			    break;
+              default:
+                  return false;
 			}
-		    return (callbacks.get(type) != null);
 		}
 
 		@Override
