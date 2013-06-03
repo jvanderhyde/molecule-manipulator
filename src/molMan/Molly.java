@@ -6,8 +6,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -33,9 +31,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.vecmath.AxisAngle4f;
-import org.jmol.adapter.smarter.SmarterJmolAdapter;
-import org.jmol.api.JmolAdapter;
 import org.jmol.api.JmolStatusListener;
 import org.jmol.api.JmolViewer;
 import org.jmol.constant.EnumCallback;
@@ -81,7 +76,7 @@ public class Molly extends Applet
     private boolean axisRotLock = true;
     private String currentMolecule = "Caffeine";
     @SuppressWarnings("unused")
-	private String callbackString = new String("Nothing");
+	private String callbackString = "Nothing";
     private String[] rotRefString = {"Rotation & Reflection",
             "s1: 360 deg", "s2: 180 deg", "s3: 120 deg", "s4: 90 deg", "s5: 72 deg", "s6: 60 deg",
             "s7: 51 deg", "s8: 45 deg", "s9: 40 deg", "s10: 36 deg"};
@@ -131,6 +126,7 @@ public class Molly extends Applet
     /**
      * Runs when the applet is initialized.  It sets up the Jmol viewers and then loads up the GUI.
      */
+    @Override
 	public void init()
 	{		
 		//Calculate the appropriate size for jmolPanel	
@@ -598,6 +594,7 @@ public class Molly extends Applet
      * Called automatically by the browser when the applet is destroyed.
      * Also called manually by an application using the applet.
      */
+    @Override
     public void destroy()
     {
         killJmolThreads();
@@ -727,114 +724,6 @@ public class Molly extends Applet
 	        return null;
 	    }
 	}
-	
-	
-	/**
-	 * JmolPanel creates a link between the Jmol viewer and our Swing interface by putting the
-	 * Jmol view in a JPanel so it can be dropped into any other JPanel.
-	 * @author This code is a modified version of code found at: 
-	 * 	http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
-	 * 	Modified by Josh Kuestersteffen
-	 */
-	static class JmolPanel extends JPanel 
-	{        
-        private static final long serialVersionUID = -3661941083797644242L;
-        JmolViewer viewer;
-        JmolAdapter adapter;
-        JmolPanel() 
-        {
-        	adapter = new SmarterJmolAdapter();
-        	
-        	//TODO See if we can figure out if this will help our problem of loading molecules...
-        	//From: http://old.nabble.com/AccessControlException-when-opening-embedded-Jmol-instance-when-accessing-PDB-via-URL.-td29492618.html
-        	//String fullname = htmlName + "__" + Math.random() + "__";
-        	//JmolViewer viewer = JmolViewer.allocateviewer(yourApplet, null, fullName, documentBase, codeBase, "-applet", null)
-        	
-        	//String fullname = htmlName + "__" + Math.random() + "__";
-        	viewer = JmolViewer.allocateViewer(this, adapter, null, null, null, "-applet", null, null);
-        }
- 
-        public JmolViewer getViewer() 
-        {
-            return viewer;
-        }
- 
-        public void executeCmd(String rasmolScript){
-            viewer.evalString(rasmolScript);
-        }
-        
-        /**
-         * Sets the current orientation (rotation) of this Jmol viewer
-         * to the orientation of the given viewer.
-         * @param source The JmolPanel whose orientation is to be copied
-         */
-        public void copyOrientation(JmolPanel source)
-        {
-            String moveToCommand = source.getMoveToScript();
-            this.executeCmd(moveToCommand);
-        }
- 
-        private Object getOrientationInfoObject(String key)
-        {
-            Hashtable h;
-            Object data = viewer.getProperty("object", "orientationInfo", null);
-            if (data instanceof Hashtable)
-                h=(Hashtable)data;
-            else
-                throw new IllegalStateException("Orientation info is not a Hashtable, it is a "+data.getClass().toString());
-
-            if (h.containsKey(key))
-            {
-                Object o = h.get(key);
-                return o;
-            }
-            else
-            {
-                String error = "Unknown key: "+key+" Possible keys:";
-                for (Object o:h.keySet())
-                    error += " "+o.toString()+" ";
-                throw new IllegalStateException(error);
-            }
-        }
-        
-        private String getMoveToScript()
-        {
-            Object o=getOrientationInfoObject("moveTo");
-            if (o instanceof String)
-            {
-                String s=(String)o;
-                s=s.replaceFirst("1", "0");
-                return s;
-            }
-            else
-                throw new IllegalStateException("moveTo is a "+o.getClass());
-        }
-
-        public float[] getAxisAngle()
-        {
-            Object o=getOrientationInfoObject("axisAngle");
-            if (o instanceof AxisAngle4f)
-            {
-                AxisAngle4f aa = (AxisAngle4f)o;
-                float[] aaa = new float[4];
-                aa.get(aaa);
-                return aaa;
-            }
-            else
-                throw new IllegalStateException("axisAngle is a "+o.getClass());
-        }
-
-        final Dimension currentSize = new Dimension();
-        final Rectangle rectClip = new Rectangle();
- 
-        public void paint(Graphics g) 
-        {
-            getSize(currentSize);
-            g.getClipBounds(rectClip);
-            
-            viewer.renderScreenImage(g, rectClip.width, rectClip.height);
-        }
-    }
 		
 	/**
 	 * ButtonListener handles all of the interaction with GUI components in the Applet.  
@@ -842,6 +731,7 @@ public class Molly extends Applet
 	 */
 	private class ButtonListener implements ActionListener 
 	{
+        @Override
 		public void actionPerformed(ActionEvent e) 
 		{
 			//Called if the SELECT button is hit and you try to load a molecule.
@@ -1530,6 +1420,7 @@ public class Molly extends Applet
 	 */
 	private class MyChangeListener implements ChangeListener
 	{
+        @Override
 		public void stateChanged(ChangeEvent e) 
 		{
 		    if(e.getSource() == axisRotSlider)
