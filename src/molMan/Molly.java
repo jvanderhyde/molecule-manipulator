@@ -73,7 +73,7 @@ public class Molly extends Applet
     private int numMolsToLoad = 0; //used to be able to tell when both Jmol windows are finished loading
     private boolean loadFromPubchem = false;
     private boolean axisRotLock = false;
-    private String currentMolecule = "Caffeine";
+    private String currentMolecule;
     private String[] rotRefString = {"Rotation & Reflection",
             "s1: 360 deg", "s2: 180 deg", "s3: 120 deg", "s4: 90 deg", "s5: 72 deg", "s6: 60 deg",
             "s7: 51 deg", "s8: 45 deg", "s9: 40 deg", "s10: 36 deg"};
@@ -153,11 +153,10 @@ public class Molly extends Applet
         view1.setJmolStatusListener(jListen1);
         
         //Load up the initial molecules...
-        numMolsToLoad = 2;
-        view0.evalString("load \"$Caffeine\";");        
-        view1.evalString("load \"$Caffeine\";");
+        currentMolecule = "Caffeine";
+        loadMoleculesWithCheck();
     }
-	
+    
 	/**
 	 * Sets up the Graphical User Interface using Swing components.  
 	 */
@@ -736,25 +735,7 @@ public class Molly extends Applet
 			if (e.getSource() == selectButton || e.getSource() == input)
 			{
 				currentMolecule = input.getText();
-                numMolsToLoad = 2;
-				
-				//Tell Jmol to try to load the specified molecule 
-				if(loadFromPubchem)
-				{
-					view0.evalString(
-							"try{" + //If the molecule fails to load an error dialogue box pops up...
-									"load \":"+currentMolecule+"\"" +
-							"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
-				    view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");
-				}
-				else
-				{
-					view0.evalString(
-							"try{" + //If the molecule fails to load an error dialogue box pops up...
-									"load \"$"+currentMolecule+"\"" +
-							"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
-				    view1.evalString("try{load \"$"+currentMolecule+"\"}catch(e){}");
-				}
+                loadMoleculesWithCheck();
 			}
 			
 			//Called if the SPIN On/Off button is hit to spin both molecules.
@@ -1095,17 +1076,17 @@ public class Molly extends Applet
                 //Check to see if there have been any transformations...  if so undo them
                 if(reflected)
                 {
-                    view1.evalString("load \":"+currentMolecule+"\";");
+                    reloadMoleculeView1();
                     reflected = !reflected;
                 }
                 else if (rotated)
                 {
-                	view1.evalString("load \":"+currentMolecule+"\";");
+                	reloadMoleculeView1();
                 	rotated = !rotated;
                 }
                 else if(rotatedAndReflected)
                 {
-                	view1.evalString("load \":"+currentMolecule+"\";");
+                	reloadMoleculeView1();
                 	rotatedAndReflected = !rotatedAndReflected;
                 }
                 else if(inverted) 
@@ -1232,6 +1213,41 @@ public class Molly extends Applet
 		}		
 	}
     
+    private void loadMoleculesWithCheck()
+    {
+        numMolsToLoad = 2;
+
+        //Tell Jmol to try to load the specified molecule 
+        if(loadFromPubchem)
+        {
+            view0.evalString(
+                    "try{" + //If the molecule fails to load an error dialogue box pops up...
+                            "load \":"+currentMolecule+"\"" +
+                    "}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
+            view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");
+        }
+        else
+        {
+            view0.evalString(
+                    "try{" + //If the molecule fails to load an error dialogue box pops up...
+                            "load \"$"+currentMolecule+"\"" +
+                    "}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
+            view1.evalString("try{load \"$"+currentMolecule+"\"}catch(e){}");
+        }
+    }
+    
+    private void reloadMoleculeView1()
+    {
+        if(loadFromPubchem)
+        {
+            view1.evalString("load \":"+currentMolecule+"\";");
+        }
+        else
+        {
+            view1.evalString("load \"$"+currentMolecule+"\";");
+        }
+    }
+
     //Adjusts the location of axis1
     private void repositionAxis()
     {
