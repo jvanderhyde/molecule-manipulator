@@ -70,7 +70,7 @@ public class Molly extends Applet
 	private boolean axisShown = false;
 	private boolean planeShown = false;
 	private boolean perspectiveLink = true;
-    private int numMolsLoaded = 0; //used to be able to tell when both Jmol windows are finished loading
+    private int numMolsToLoad = 0; //used to be able to tell when both Jmol windows are finished loading
     private boolean loadFromPubchem = false;
     private boolean axisRotLock = false;
     private String currentMolecule = "Caffeine";
@@ -153,7 +153,7 @@ public class Molly extends Applet
         view1.setJmolStatusListener(jListen1);
         
         //Load up the initial molecules...
-        numMolsLoaded = 0;
+        numMolsToLoad = 2;
         view0.evalString("load \"$Caffeine\";");        
         view1.evalString("load \"$Caffeine\";");
     }
@@ -640,13 +640,6 @@ public class Molly extends Applet
 		//  We have got to make sure that the right name is loaded.
 		
 		String urlName0 = view0.getModelSetPathName();
-		String urlName1 = view1.getModelSetPathName();
-		
-		while(!urlName0.equals(urlName1)) //Keep reloading the names until you have the same one
-		{
-			urlName0 = view0.getModelSetPathName();
-			urlName1 = view1.getModelSetPathName();
-		}
 		
         if(loadFromPubchem)
         {
@@ -743,7 +736,7 @@ public class Molly extends Applet
 			if (e.getSource() == selectButton || e.getSource() == input)
 			{
 				currentMolecule = input.getText();
-                numMolsLoaded = 0;
+                numMolsToLoad = 2;
 				
 				//Tell Jmol to try to load the specified molecule 
 				if(loadFromPubchem)
@@ -1336,8 +1329,8 @@ public class Molly extends Applet
 				case LOADSTRUCT: //Called when the applet is finished loading the new mol.
 					//When this case has been hit twice, then it will increment the variable
                     //twice.  This is when you know they are both done loading.
-                    numMolsLoaded++;
-                    if (numMolsLoaded >= 2)
+                    numMolsToLoad--;
+                    if (numMolsToLoad == 0)
                     {
                         changeCurrentMolLabel();
                     }
