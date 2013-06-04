@@ -86,10 +86,6 @@ public class Molly extends Applet
 	private static final long serialVersionUID = 1L;	
     private float axisRadius = 5.539443f;
 	private Vector3 axisEnd0 = new Vector3(axisRadius, 0, 0);
-    double uPerspective = 0;
-	double vPerspective = 0;
-	double wPerspective = 0;
-	double aPerspective = 0;
 	
 	 ////////////GUI Components\\\\\\\\\\\\
 	private JmolPanel jmolPanel0;
@@ -1231,10 +1227,10 @@ public class Molly extends Applet
 
         //Store the axis values and the angle of rotation.
         // u,v,w is the axis of rotation and a is the rotation amount in degrees
-        uPerspective = aa[0];
-        vPerspective = aa[1];
-        wPerspective = aa[2];
-        aPerspective = aa[3];
+        double uPerspective = aa[0];
+        double vPerspective = aa[1];
+        double wPerspective = aa[2];
+        double aPerspective = aa[3];
 
         //Sets the original location of the drawn axis.
         //We cannot just set these values, because then we cannot control the length of the
