@@ -56,9 +56,10 @@ public class Molly extends Applet
     private JButton rotButton = new JButton("Rotate");
     private JButton rotRefButton = new JButton("Rotate & Reflect");
     private JButton refButton = new JButton("Reflect");
-    private JButton xAlignAxis = new JButton("Align X");
-    private JButton yAlignAxis = new JButton("Align Y");
-    private JButton zAlignAxis = new JButton("Align Z");
+    private JRadioButton xAlignAxis = new JRadioButton("X");
+    private JRadioButton yAlignAxis = new JRadioButton("Y");
+    private JRadioButton zAlignAxis = new JRadioButton("Z");
+    private JRadioButton noneAlignAxis=new JRadioButton("custom");
     
     ////////////STATE VARIABLES\\\\\\\\\\\\
     private boolean rotateOn = false;
@@ -71,7 +72,7 @@ public class Molly extends Applet
 	private boolean perspectiveLink = true;
     private int numMolsLoaded = 0; //used to be able to tell when both Jmol windows are finished loading
     private boolean loadFromPubchem = false;
-    private boolean axisRotLock = true;
+    private boolean axisRotLock = false;
     private String currentMolecule = "Caffeine";
     private String[] rotRefString = {"Rotation & Reflection",
             "s1: 360 deg", "s2: 180 deg", "s3: 120 deg", "s4: 90 deg", "s5: 72 deg", "s6: 60 deg",
@@ -81,7 +82,7 @@ public class Molly extends Applet
     private int rotationAmount;    
     private final int W = 1400;
     private final int H = 800;
-	private int yAxisRot = -45;
+	private int yAxisRot = 0;
 	int jmolWidth = 0;
 	private static final long serialVersionUID = 1L;	
     private float axisRadius = 5.539443f;
@@ -93,13 +94,13 @@ public class Molly extends Applet
 	private JmolViewer view0;
 	private JmolViewer view1;
     private JTextField input = new JTextField(30);
-    private JTextField axisRotField = new JTextField("-45", 2);    
+    private JTextField axisRotField = new JTextField(""+yAxisRot, 2);    
     private JLabel currentMolLabel = new JLabel("");
     private JLabel axisRotLabel = new JLabel("Rotation of Axis/Plane: ");
 	private JCheckBox showAxis = new JCheckBox("Show Axis");
 	private JCheckBox showPlane = new JCheckBox("Show Plane");
 	private JCheckBox perspectiveLinkBox = new JCheckBox("Link Rot");
-	private JCheckBox axisRotLockBox = new JCheckBox("Lock Rotation");
+	private JCheckBox axisRotLockBox = new JCheckBox("Lock Axis");
     private JSlider axisRotSlider;
     @SuppressWarnings({ "unchecked", "rawtypes" })
 	private JComboBox rotRefBox = new JComboBox(rotRefString);
@@ -135,7 +136,7 @@ public class Molly extends Applet
         
         loadStructure();  //Finishes initialising the Jmol viewers and load the first molecule.
         
-        axisRotSlider.setValue(-45);  //initializest the slider so it matches the axis angle.
+        axisRotSlider.setValue(yAxisRot);  //initializest the slider so it matches the axis angle.
         
         this.setVisible(true);
         this.validate();  
@@ -437,24 +438,39 @@ public class Molly extends Applet
 	        yAxisRotFlow.add(axisRotLabel);
 	        yAxisRotFlow.add(axisRotField);
 	        
-	        JPanel alignmentButsFlow = new JPanel(new FlowLayout());
-	        	yAlignAxis.addActionListener(handler);
-	        	xAlignAxis.addActionListener(handler);
-	        	zAlignAxis.addActionListener(handler);
-	        alignmentButsFlow.add(xAlignAxis);
-	        alignmentButsFlow.add(yAlignAxis);
-	        alignmentButsFlow.add(zAlignAxis);
+            JPanel alignmentButsBox = new JPanel();
+                alignmentButsBox.setLayout(new BoxLayout(alignmentButsBox,BoxLayout.Y_AXIS));
+                JPanel alignmentButsLabelFlow = new JPanel(new FlowLayout());
+                    alignmentButsLabelFlow.add(new JLabel("Align to molecule axis:"));
+                alignmentButsBox.add(alignmentButsLabelFlow);
+                JPanel alignmentButsFlow = new JPanel(new FlowLayout());
+                    yAlignAxis.addActionListener(handler);
+                    xAlignAxis.addActionListener(handler);
+                    zAlignAxis.addActionListener(handler);
+                    alignmentButsFlow.add(xAlignAxis);
+                    alignmentButsFlow.add(yAlignAxis);
+                    alignmentButsFlow.add(zAlignAxis);
+                    alignmentButsFlow.add(noneAlignAxis);
+                    ButtonGroup axesRadioButs = new ButtonGroup();
+                    axesRadioButs.add(xAlignAxis);
+                    axesRadioButs.add(yAlignAxis);
+                    axesRadioButs.add(zAlignAxis);
+                    axesRadioButs.add(noneAlignAxis);
+                    noneAlignAxis.setSelected(true);
+                alignmentButsBox.add(alignmentButsFlow);
 	        	
-        axisRotSlidersBoxPanel.add(alignmentButsFlow);
-        axisRotSlidersBoxPanel.add(yAxisRotFlow);
-        axisRotSlidersBoxPanel.add(axisRotSlider);
+        axisRotSlidersBoxPanel.add(alignmentButsBox);
+        
+        //I don't like how this works, so I'm removing it for now (jnv)
+        //axisRotSlidersBoxPanel.add(yAxisRotFlow);
+        //axisRotSlidersBoxPanel.add(axisRotSlider);
         
         JPanel axisRotChecksBoxPanel = new JPanel();
         	axisRotChecksBoxPanel.setLayout(new BoxLayout(axisRotChecksBoxPanel, BoxLayout.Y_AXIS));
         	showAxis.addActionListener(handler);
         	showPlane.addActionListener(handler);
         	axisRotLockBox.addActionListener(handler);
-        	axisRotLockBox.setSelected(true);
+        	axisRotLockBox.setSelected(axisRotLock);
         axisRotChecksBoxPanel.add(axisRotLockBox);
         axisRotChecksBoxPanel.add(showAxis);
         axisRotChecksBoxPanel.add(showPlane);
@@ -1212,7 +1228,13 @@ public class Molly extends Applet
 			//Locks the axis rotation so that it does not move when the perspective is changed. 
             else if(e.getSource() == axisRotLockBox)
             {
-            	axisRotLock = !axisRotLock;
+            	axisRotLock = axisRotLockBox.isSelected();
+                if (axisRotLock)
+                    noneAlignAxis.setSelected(true);
+                xAlignAxis.setEnabled(!axisRotLock);
+                yAlignAxis.setEnabled(!axisRotLock);
+                zAlignAxis.setEnabled(!axisRotLock);
+                noneAlignAxis.setEnabled(!axisRotLock);
             }
 		}		
 	}
