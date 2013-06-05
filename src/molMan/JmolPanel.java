@@ -35,6 +35,7 @@ class JmolPanel extends JPanel
         //JmolViewer viewer = JmolViewer.allocateviewer(yourApplet, null, fullName, documentBase, codeBase, "-applet", null)
         //String fullname = htmlName + "__" + Math.random() + "__";
         viewer = JmolViewer.allocateViewer((java.awt.Component)this, adapter, null, null, null, "-applet", null, null);
+        viewer.evalString("set antialiasDisplay ON");
     }
 
     public JmolViewer getViewer() {

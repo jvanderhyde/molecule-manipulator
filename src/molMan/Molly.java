@@ -74,10 +74,10 @@ public class Molly extends Applet
     private boolean axisRotLock = false;
     private String currentMolecule;
     private String[] rotRefString = {"Rotation & Reflection",
-            "s1: 360 deg", "s2: 180 deg", "s3: 120 deg", "s4: 90 deg", "s5: 72 deg", "s6: 60 deg",
-            "s7: 51 deg", "s8: 45 deg", "s9: 40 deg", "s10: 36 deg"};
-    private String[] rotString = {"Rotations","c1: 360 deg", "c2: 180 deg", "c3: 120 deg",
-        "c4: 90 deg", "c5: 72 deg", "c6: 60 deg", "c7: 51 deg", "c8: 45 deg", "c9: 40 deg", "c10: 36 deg"};
+            "s1: 360\u00B0", "s2: 180\u00B0", "s3: 120\u00B0", "s4: 90\u00B0", "s5: 72\u00B0", "s6: 60\u00B0",
+            "s7: 51\u00B0", "s8: 45\u00B0", "s9: 40\u00B0", "s10: 36\u00B0"};
+    private String[] rotString = {"Rotations","c1: 360\u00B0", "c2: 180\u00B0", "c3: 120\u00B0",
+        "c4: 90\u00B0", "c5: 72\u00B0", "c6: 60\u00B0", "c7: 51\u00B0", "c8: 45\u00B0", "c9: 40\u00B0", "c10: 36\u00B0"};
     private int rotationAmount;    
     private final int W = 1400;
     private final int H = 800;
@@ -263,22 +263,22 @@ public class Molly extends Applet
         rot = new JPanel();
         	rot.setLayout(new BoxLayout(rot, BoxLayout.Y_AXIS));
         	
-	        JLabel rotationTitle = new JLabel("ROTATION");
-	        	rotationTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+	        JPanel rotTitleFlow = new JPanel(new FlowLayout());
+                JLabel rotationTitle = new JLabel("ROTATION");
+                    rotationTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+            rotTitleFlow.add(rotationTitle);
 	        
-	        JLabel rotSpacer = new JLabel(" ");
-	        	
 	        JPanel rotTextFlow = new JPanel(new FlowLayout());
 	    		JLabel rotTextLabel = new JLabel("<html><body>" +
-	    				"Rotations occur around the axis of<br>" +
-	    				"rotation.  Valid rotation degrees are<br>" +
-	    				"360deg/n for any integer 1=<n>=10.<br>" +
+	    				"Rotations occur around an axis of<br>" +
+	    				"rotation.  Valid rotation angles are<br>" +
+	    				"360&deg;/<i>n</i> for any integer <i>n</i> between 1 and 10.<br>" +
 	    				" <br>" +
 	    				"To perform a rotation, specify your<br>" +
 	    				"desired axis with the options below.<br>" +
 	    				"Then select the degrees of rotation from<br>" +
 	    				"the drop-down list and click the Rotate<br>" +
-	    				"Button." +
+	    				"button." +
 	    				"</body></html>");
 	    		rotTextLabel.setFont(new Font("Times New Roman", Font.PLAIN, 16));
     		rotTextFlow.add(rotTextLabel);
@@ -291,8 +291,7 @@ public class Molly extends Applet
     			rotButton.addActionListener(handler);
     		rotationButFlow.add(rotButton);
 	        
-    	rot.add(rotationTitle);
-    	rot.add(rotSpacer);
+    	rot.add(rotTitleFlow);
     	rot.add(rotTextFlow);
         rot.add(rotBoxPan);
         rot.add(rotationButFlow);
@@ -302,17 +301,20 @@ public class Molly extends Applet
 	        inv.setLayout(new BoxLayout(inv, BoxLayout.Y_AXIS));
 	        inv.setAlignmentX(CENTER_ALIGNMENT);
 	        
-	        JLabel inversionTitle = new JLabel("INVERSION");
-        		inversionTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
-        		
-        	JLabel invSpacer = new JLabel(" ");
+	        JPanel invTitleFlow = new JPanel(new FlowLayout());
+                JLabel inversionTitle = new JLabel("INVERSION");
+                    inversionTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+            invTitleFlow.add(inversionTitle);
 
         	JPanel invTextFlow = new JPanel(new FlowLayout());
         		JLabel inversionTextLabel = new JLabel("<html><body>" +
-        				"Inversion moves all of the molecule's<br>" +
-        				"atoms from their original position (x,y,z),<br>" +
+        				"Inversion moves all of the molecule&rsquo;s<br>" +
+        				"atoms from their original position (x, y, z),<br>" +
         				"through the center point of the molecule,<br>" +
-        				"to the opposite position (-x,-y,-z)." +
+        				"to the opposite position (-x, -y, -z).<br>" +
+	    				" <br>" +
+	    				"To perform an inversion, <br>" +
+	    				"click the Invert button." +
         				"</body></html>");
         		inversionTextLabel.setFont(new Font("Times New Roman", Font.PLAIN, 16));
 	        invTextFlow.add(inversionTextLabel);
@@ -322,8 +324,7 @@ public class Molly extends Applet
         	invButFlow.add(invertButton);
         	invButFlow.setAlignmentY(TOP_ALIGNMENT);
         
-        inv.add(inversionTitle);
-        inv.add(invSpacer);
+        inv.add(invTitleFlow);
         inv.add(invTextFlow);
         inv.add(invButFlow);
         
@@ -331,22 +332,22 @@ public class Molly extends Applet
         ref = new JPanel();
         	ref.setLayout(new BoxLayout(ref, BoxLayout.Y_AXIS));
         	
-        	JLabel reflectionTitle = new JLabel("REFLECTION");
-        		reflectionTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+	        JPanel refTitleFlow = new JPanel(new FlowLayout());
+                JLabel reflectionTitle = new JLabel("REFLECTION");
+                    reflectionTitle.setFont(new Font("Sans Serif", Font.BOLD, 24));
+            refTitleFlow.add(reflectionTitle);
     
-        	JLabel refSpacer = new JLabel(" ");
-	        	
 	        JPanel refTextFlow = new JPanel(new FlowLayout());
 	    		JLabel refTextLabel = new JLabel("<html><body>" +
 	    				"Reflections occur through a plane.<br>" +
 	    				"Basically each atom is a certain distance,<br>" +
-	    				"D, from the plane.  During the reflection,<br>" +
-	    				"each atom is moved so that it is D away<br>" +
+	    				"<i>D</i>, from the plane.  During the reflection,<br>" +
+	    				"each atom is moved until it is <i>D</i> away<br>" +
 	    				"from the plane on the opposite side.<br>" +
 	    				" <br>" +
 	    				"To perform a reflection, specify your<br>" +
 	    				"desired plane with the options below.<br>" +
-	    				"Then click the Reflect Button." +
+	    				"Then click the Reflect button." +
 	    				"</body></html>");
 	    		refTextLabel.setFont(new Font("Times New Roman", Font.PLAIN, 16));
     		refTextFlow.add(refTextLabel);
@@ -355,8 +356,7 @@ public class Molly extends Applet
 		        refButton.addActionListener(handler);
 		    reflectionButFlow.add(refButton);
 	    
-	    ref.add(reflectionTitle);
-	    ref.add(refSpacer);
+	    ref.add(refTitleFlow);
 	    ref.add(refTextFlow);
         ref.add(reflectionButFlow);
          
@@ -364,23 +364,23 @@ public class Molly extends Applet
         rotRef = new JPanel();
 	        rotRef.setLayout(new BoxLayout(rotRef, BoxLayout.Y_AXIS));
 	        
-	        JLabel rotRefTitle = new JLabel("ROTATION & REFLECTION");
-	        	rotRefTitle.setFont(new Font("Sans Serif", Font.BOLD, 20));
-	        	
-	        JLabel rotRefSpacer = new JLabel(" ");
-	        	
+	        JPanel rotRefTitleFlow = new JPanel(new FlowLayout());
+                JLabel rotRefTitle = new JLabel("ROTATION & REFLECTION");
+                    rotRefTitle.setFont(new Font("Sans Serif", Font.BOLD, 20));
+            rotRefTitleFlow.add(rotRefTitle);
+	        
 	        JPanel rotRefTextFlow = new JPanel(new FlowLayout());
 	    		JLabel rotRefTextLabel = new JLabel("<html><body>" +
-	    				"Rotation and Reflection is basically.<br>" +
+	    				"Rotation and Reflection is basically<br>" +
 	    				"exactly what it sounds like.  A rotation<br>" +
 	    				"is performed around an axis and then the<br>" +
 	    				"atoms are reflected through the plane that<br>" +
-	    				"perpendicular to the axis of rotation<br>" +
+	    				"is perpendicular to the axis of rotation.<br>" +
 	    				" <br>" +
 	    				"To perform a Rotation and Reflection, specify<br>" +
 	    				"your desired axis/plane with the options<br>" +
-	    				"below.  Select your degree of rotation from<br>" +
-	    				"the drop-down list. Then click the Rotate<br>" +
+	    				"below. Then select your degree of rotation from<br>" +
+	    				"the drop-down list and click the Rotate<br>" +
 	    				"and Reflect Button." +
 	    				"</body></html>");
 	    		rotRefTextLabel.setFont(new Font("Times New Roman", Font.PLAIN, 16));
@@ -395,8 +395,7 @@ public class Molly extends Applet
         		rotRefButton.addActionListener(handler);
         	rotRefButFlow.add(rotRefButton);
         
-        rotRef.add(rotRefTitle);
-        rotRef.add(rotRefSpacer);
+        rotRef.add(rotRefTitleFlow);
         rotRef.add(rotRefTextFlow);
         rotRef.add(rotRefBoxPan);
         rotRef.add(rotRefButFlow);
@@ -657,19 +656,20 @@ public class Molly extends Applet
         //Relayout the applet becasue the label may have changed size
         currentMolLabel.invalidate();
         this.validate();
-        
+	}
+    
+    private void resetAxis()
+    {
         resetAxisSize();  //Makes sure that the axis is the right length for the new molecule.
         drawAxis();
         drawCircle();
         if (!axisShown) removeAxis();
         if (!planeShown) removeCircle();
-	}
+    }
 		
-	/**
-	 * This method checks the size of the current molecule and adjusts the vector that controls
-	 * the length of the axis to match.
-	 */
-	public void resetAxisSize()
+	//This method checks the size of the current molecule and adjusts the vector that controls
+	//the length of the axis to match.
+	private void resetAxisSize()
 	{
 		//Get the radius from the molecule loaded into view1.
 		axisRadius = view1.getRotationRadius();
@@ -1263,6 +1263,7 @@ public class Molly extends Applet
         {
             view1.evalString("load \"$"+currentMolecule+"\";");
         }
+        resetAxis();
     }
 
     //Adjusts the location of axis1
@@ -1326,10 +1327,6 @@ public class Molly extends Applet
 		 */
 		public void notifyCallback(EnumCallback type, Object[] data) 
 		{
-			@SuppressWarnings("unused")
-			String strInfo = (data == null || data[1] == null ? null : data[1]
-			          .toString());
-			
 			switch(type)
 			{
 				case ATOMMOVED:
@@ -1360,12 +1357,13 @@ public class Molly extends Applet
 				case APPLETREADY:
 					break;
 				case LOADSTRUCT: //Called when the applet is finished loading the new mol.
-					//When this case has been hit twice, then it will increment the variable
+					//When this case has been hit twice, then it will decrement the variable
                     //twice.  This is when you know they are both done loading.
                     numMolsToLoad--;
                     if (numMolsToLoad == 0)
                     {
                         changeCurrentMolLabel();
+                        resetAxis();
                     }
 					break;
 			}
