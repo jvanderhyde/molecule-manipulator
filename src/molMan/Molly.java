@@ -659,6 +659,10 @@ public class Molly extends Applet
         this.validate();
         
         resetAxisSize();  //Makes sure that the axis is the right length for the new molecule.
+        drawAxis();
+        drawCircle();
+        if (!axisShown) removeAxis();
+        if (!planeShown) removeCircle();
 	}
 		
 	/**
@@ -700,7 +704,22 @@ public class Molly extends Applet
 	    		"draw circle1 CIRCLE {0,0,0} {"+axisEnd0.x+","+axisEnd0.y+","+axisEnd0.z+"} "+
 				"SCALE "+scale+" translucent [102,155,255];");
 	}
-	
+    
+    /**
+     * Removes the display of the axis
+     */
+    public void removeAxis()
+    {
+        view1.evalString("draw axis1 OFF");
+    }
+    
+    /**
+     * Removes the display of the plane (circle) perpendicular to the axis
+     */
+    public void removeCircle()
+    {
+        view1.evalString("draw circle1 OFF");
+    }
 	
 	/** 
 	 * Returns an ImageIcon, or null if the path was invalid.
@@ -1117,18 +1136,17 @@ public class Molly extends Applet
 			//Turns the axis on or off.
             else if(e.getSource() == showAxis)
             {
-            	axisShown = !axisShown;
-            	if(axisShown == true) drawAxis();
-            	else view1.evalString("draw axis1 DELETE");
+            	axisShown = showAxis.isSelected();
+            	if (axisShown) drawAxis();
+            	else removeAxis();
             }
 			
 			//Turns the plane on or off.
             else if(e.getSource() == showPlane)
             {
-            	planeShown = !planeShown;
-            	
-            	if(planeShown == true) drawCircle();
-            	else view1.evalString("draw circle DELETE");
+            	planeShown = showPlane.isSelected();
+            	if (planeShown) drawCircle();
+            	else removeCircle();
             }
 			//Aligns the molecule's x axis to axis1.
             else if(e.getSource() == xAlignAxis)
