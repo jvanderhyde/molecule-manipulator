@@ -23,7 +23,7 @@ public class AppletRunner
                 applet.stop();
                 applet.destroy();
                 f.dispose();
-                //System.exit(0);//should not be necessary; something is not cleaned up correctly in applet
+                //System.exit(0);//should not be necessary unless something is not cleaned up correctly in applet
             }
         });
         f.setSize(1110,720);
