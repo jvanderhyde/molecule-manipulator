@@ -6,8 +6,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -33,9 +31,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.vecmath.AxisAngle4f;
-import org.jmol.adapter.smarter.SmarterJmolAdapter;
-import org.jmol.api.JmolAdapter;
 import org.jmol.api.JmolStatusListener;
 import org.jmol.api.JmolViewer;
 import org.jmol.constant.EnumCallback;
@@ -61,9 +56,10 @@ public class Molly extends Applet
     private JButton rotButton = new JButton("Rotate");
     private JButton rotRefButton = new JButton("Rotate & Reflect");
     private JButton refButton = new JButton("Reflect");
-    private JButton xAlignAxis = new JButton("Align X");
-    private JButton yAlignAxis = new JButton("Align Y");
-    private JButton zAlignAxis = new JButton("Align Z");
+    private JRadioButton xAlignAxis = new JRadioButton("X");
+    private JRadioButton yAlignAxis = new JRadioButton("Y");
+    private JRadioButton zAlignAxis = new JRadioButton("Z");
+    private JRadioButton noneAlignAxis=new JRadioButton("custom");
     
     ////////////STATE VARIABLES\\\\\\\\\\\\
     private boolean rotateOn = false;
@@ -74,14 +70,10 @@ public class Molly extends Applet
 	private boolean axisShown = false;
 	private boolean planeShown = false;
 	private boolean perspectiveLink = true;
-	private boolean loadingMol0 = false;//These are both used to be able to tell when both Jmol windows are finished loading
-    @SuppressWarnings("unused")
-	private boolean loadingMol1 = false;
+    private int numMolsToLoad = 0; //used to be able to tell when both Jmol windows are finished loading
     private boolean loadFromPubchem = false;
-    private boolean axisRotLock = true;
-    private String currentMolecule = "Caffeine";
-    @SuppressWarnings("unused")
-	private String callbackString = new String("Nothing");
+    private boolean axisRotLock = false;
+    private String currentMolecule;
     private String[] rotRefString = {"Rotation & Reflection",
             "s1: 360 deg", "s2: 180 deg", "s3: 120 deg", "s4: 90 deg", "s5: 72 deg", "s6: 60 deg",
             "s7: 51 deg", "s8: 45 deg", "s9: 40 deg", "s10: 36 deg"};
@@ -90,16 +82,11 @@ public class Molly extends Applet
     private int rotationAmount;    
     private final int W = 1400;
     private final int H = 800;
-	private int yAxisRot = -45;
+	private int yAxisRot = 0;
 	int jmolWidth = 0;
 	private static final long serialVersionUID = 1L;	
     private float axisRadius = 5.539443f;
 	private Vector3 axisEnd0 = new Vector3(axisRadius, 0, 0);
-    protected Map<EnumCallback, String> callbacks = new Hashtable<EnumCallback, String>();
-    double uPerspective = 0;
-	double vPerspective = 0;
-	double wPerspective = 0;
-	double aPerspective = 0;
 	
 	 ////////////GUI Components\\\\\\\\\\\\
 	private JmolPanel jmolPanel0;
@@ -107,13 +94,13 @@ public class Molly extends Applet
 	private JmolViewer view0;
 	private JmolViewer view1;
     private JTextField input = new JTextField(30);
-    private JTextField axisRotField = new JTextField("-45", 2);    
+    private JTextField axisRotField = new JTextField(""+yAxisRot, 2);    
     private JLabel currentMolLabel = new JLabel("");
     private JLabel axisRotLabel = new JLabel("Rotation of Axis/Plane: ");
 	private JCheckBox showAxis = new JCheckBox("Show Axis");
 	private JCheckBox showPlane = new JCheckBox("Show Plane");
 	private JCheckBox perspectiveLinkBox = new JCheckBox("Link Rot");
-	private JCheckBox axisRotLockBox = new JCheckBox("Lock Rotation");
+	private JCheckBox axisRotLockBox = new JCheckBox("Lock Axis");
     private JSlider axisRotSlider;
     @SuppressWarnings({ "unchecked", "rawtypes" })
 	private JComboBox rotRefBox = new JComboBox(rotRefString);
@@ -131,6 +118,7 @@ public class Molly extends Applet
     /**
      * Runs when the applet is initialized.  It sets up the Jmol viewers and then loads up the GUI.
      */
+    @Override
 	public void init()
 	{		
 		//Calculate the appropriate size for jmolPanel	
@@ -148,7 +136,7 @@ public class Molly extends Applet
         
         loadStructure();  //Finishes initialising the Jmol viewers and load the first molecule.
         
-        axisRotSlider.setValue(-45);  //initializest the slider so it matches the axis angle.
+        axisRotSlider.setValue(yAxisRot);  //initializest the slider so it matches the axis angle.
         
         this.setVisible(true);
         this.validate();  
@@ -163,15 +151,12 @@ public class Molly extends Applet
         view0.setJmolStatusListener(jListen0);
         view1 = jmolPanel1.getViewer();        
         view1.setJmolStatusListener(jListen1);
-                      
-        loadingMol0 = true;
-        loadingMol1 = true;
         
         //Load up the initial molecules...
-        view0.evalString("load \"$Caffeine\";");        
-        view1.evalString("load \"$Caffeine\";");
+        currentMolecule = "Caffeine";
+        loadMoleculesWithCheck();
     }
-	
+    
 	/**
 	 * Sets up the Graphical User Interface using Swing components.  
 	 */
@@ -452,24 +437,39 @@ public class Molly extends Applet
 	        yAxisRotFlow.add(axisRotLabel);
 	        yAxisRotFlow.add(axisRotField);
 	        
-	        JPanel alignmentButsFlow = new JPanel(new FlowLayout());
-	        	yAlignAxis.addActionListener(handler);
-	        	xAlignAxis.addActionListener(handler);
-	        	zAlignAxis.addActionListener(handler);
-	        alignmentButsFlow.add(xAlignAxis);
-	        alignmentButsFlow.add(yAlignAxis);
-	        alignmentButsFlow.add(zAlignAxis);
+            JPanel alignmentButsBox = new JPanel();
+                alignmentButsBox.setLayout(new BoxLayout(alignmentButsBox,BoxLayout.Y_AXIS));
+                JPanel alignmentButsLabelFlow = new JPanel(new FlowLayout());
+                    alignmentButsLabelFlow.add(new JLabel("Align to molecule axis:"));
+                alignmentButsBox.add(alignmentButsLabelFlow);
+                JPanel alignmentButsFlow = new JPanel(new FlowLayout());
+                    yAlignAxis.addActionListener(handler);
+                    xAlignAxis.addActionListener(handler);
+                    zAlignAxis.addActionListener(handler);
+                    alignmentButsFlow.add(xAlignAxis);
+                    alignmentButsFlow.add(yAlignAxis);
+                    alignmentButsFlow.add(zAlignAxis);
+                    alignmentButsFlow.add(noneAlignAxis);
+                    ButtonGroup axesRadioButs = new ButtonGroup();
+                    axesRadioButs.add(xAlignAxis);
+                    axesRadioButs.add(yAlignAxis);
+                    axesRadioButs.add(zAlignAxis);
+                    axesRadioButs.add(noneAlignAxis);
+                    noneAlignAxis.setSelected(true);
+                alignmentButsBox.add(alignmentButsFlow);
 	        	
-        axisRotSlidersBoxPanel.add(alignmentButsFlow);
-        axisRotSlidersBoxPanel.add(yAxisRotFlow);
-        axisRotSlidersBoxPanel.add(axisRotSlider);
+        axisRotSlidersBoxPanel.add(alignmentButsBox);
+        
+        //I don't like how this works, so I'm removing it for now (jnv)
+        //axisRotSlidersBoxPanel.add(yAxisRotFlow);
+        //axisRotSlidersBoxPanel.add(axisRotSlider);
         
         JPanel axisRotChecksBoxPanel = new JPanel();
         	axisRotChecksBoxPanel.setLayout(new BoxLayout(axisRotChecksBoxPanel, BoxLayout.Y_AXIS));
         	showAxis.addActionListener(handler);
         	showPlane.addActionListener(handler);
         	axisRotLockBox.addActionListener(handler);
-        	axisRotLockBox.setSelected(true);
+        	axisRotLockBox.setSelected(axisRotLock);
         axisRotChecksBoxPanel.add(axisRotLockBox);
         axisRotChecksBoxPanel.add(showAxis);
         axisRotChecksBoxPanel.add(showPlane);
@@ -598,6 +598,7 @@ public class Molly extends Applet
      * Called automatically by the browser when the applet is destroyed.
      * Also called manually by an application using the applet.
      */
+    @Override
     public void destroy()
     {
         killJmolThreads();
@@ -638,34 +639,26 @@ public class Molly extends Applet
 		//  We have got to make sure that the right name is loaded.
 		
 		String urlName0 = view0.getModelSetPathName();
-		String urlName1 = view1.getModelSetPathName();
-		
-		while(!urlName0.equals(urlName1)) //Keep reloading the names until you have the same one
-		{
-			urlName0 = view0.getModelSetPathName();
-			urlName1 = view1.getModelSetPathName();
-		}
 		
         if(loadFromPubchem)
         {
         	//http://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/SDF?record_type=3d
             urlName0 = urlName0.substring(55, urlName0.length()-19); 
-            
             urlName0 = urlName0.replaceAll("%20", " ");//Puts spaces back in if the name is more then one word
-
-            currentMolecule = urlName0;
-            currentMolLabel.setText("Current Molecule: "+currentMolecule);
         }
         else //Load from NCI/NIH
         {
         	//http://cactus.nci.nih.gov/chemical/structure/PF5/file?format=sdf&get3d=True
         	urlName0 = urlName0.substring(45, urlName0.length()-27); 
-
-        	 urlName0 = urlName0.replaceAll("%20", " ");
-        	
-            currentMolecule = urlName0;
-            currentMolLabel.setText("Current Molecule: "+currentMolecule);
+        	urlName0 = urlName0.replaceAll("%20", " ");
         }
+        currentMolecule = urlName0;
+        currentMolLabel.setText("Current Molecule: "+currentMolecule);
+        
+        //Relayout the applet becasue the label may have changed size
+        currentMolLabel.invalidate();
+        this.validate();
+        
         resetAxisSize();  //Makes sure that the axis is the right length for the new molecule.
 	}
 		
@@ -728,114 +721,6 @@ public class Molly extends Applet
 	        return null;
 	    }
 	}
-	
-	
-	/**
-	 * JmolPanel creates a link between the Jmol viewer and our Swing interface by putting the
-	 * Jmol view in a JPanel so it can be dropped into any other JPanel.
-	 * @author This code is a modified version of code found at: 
-	 * 	http://biojava.org/wiki/BioJava:CookBook:PDB:Jmol
-	 * 	Modified by Josh Kuestersteffen
-	 */
-	static class JmolPanel extends JPanel 
-	{        
-        private static final long serialVersionUID = -3661941083797644242L;
-        JmolViewer viewer;
-        JmolAdapter adapter;
-        JmolPanel() 
-        {
-        	adapter = new SmarterJmolAdapter();
-        	
-        	//TODO See if we can figure out if this will help our problem of loading molecules...
-        	//From: http://old.nabble.com/AccessControlException-when-opening-embedded-Jmol-instance-when-accessing-PDB-via-URL.-td29492618.html
-        	//String fullname = htmlName + "__" + Math.random() + "__";
-        	//JmolViewer viewer = JmolViewer.allocateviewer(yourApplet, null, fullName, documentBase, codeBase, "-applet", null)
-        	
-        	//String fullname = htmlName + "__" + Math.random() + "__";
-        	viewer = JmolViewer.allocateViewer(this, adapter, null, null, null, "-applet", null, null);
-        }
- 
-        public JmolViewer getViewer() 
-        {
-            return viewer;
-        }
- 
-        public void executeCmd(String rasmolScript){
-            viewer.evalString(rasmolScript);
-        }
-        
-        /**
-         * Sets the current orientation (rotation) of this Jmol viewer
-         * to the orientation of the given viewer.
-         * @param source The JmolPanel whose orientation is to be copied
-         */
-        public void copyOrientation(JmolPanel source)
-        {
-            String moveToCommand = source.getMoveToScript();
-            this.executeCmd(moveToCommand);
-        }
- 
-        private Object getOrientationInfoObject(String key)
-        {
-            Hashtable h;
-            Object data = viewer.getProperty("object", "orientationInfo", null);
-            if (data instanceof Hashtable)
-                h=(Hashtable)data;
-            else
-                throw new IllegalStateException("Orientation info is not a Hashtable, it is a "+data.getClass().toString());
-
-            if (h.containsKey(key))
-            {
-                Object o = h.get(key);
-                return o;
-            }
-            else
-            {
-                String error = "Unknown key: "+key+" Possible keys:";
-                for (Object o:h.keySet())
-                    error += " "+o.toString()+" ";
-                throw new IllegalStateException(error);
-            }
-        }
-        
-        private String getMoveToScript()
-        {
-            Object o=getOrientationInfoObject("moveTo");
-            if (o instanceof String)
-            {
-                String s=(String)o;
-                s=s.replaceFirst("1", "0");
-                return s;
-            }
-            else
-                throw new IllegalStateException("moveTo is a "+o.getClass());
-        }
-
-        public float[] getAxisAngle()
-        {
-            Object o=getOrientationInfoObject("axisAngle");
-            if (o instanceof AxisAngle4f)
-            {
-                AxisAngle4f aa = (AxisAngle4f)o;
-                float[] aaa = new float[4];
-                aa.get(aaa);
-                return aaa;
-            }
-            else
-                throw new IllegalStateException("axisAngle is a "+o.getClass());
-        }
-
-        final Dimension currentSize = new Dimension();
-        final Rectangle rectClip = new Rectangle();
- 
-        public void paint(Graphics g) 
-        {
-            getSize(currentSize);
-            g.getClipBounds(rectClip);
-            
-            viewer.renderScreenImage(g, rectClip.width, rectClip.height);
-        }
-    }
 		
 	/**
 	 * ButtonListener handles all of the interaction with GUI components in the Applet.  
@@ -843,33 +728,14 @@ public class Molly extends Applet
 	 */
 	private class ButtonListener implements ActionListener 
 	{
+        @Override
 		public void actionPerformed(ActionEvent e) 
 		{
 			//Called if the SELECT button is hit and you try to load a molecule.
 			if (e.getSource() == selectButton || e.getSource() == input)
 			{
 				currentMolecule = input.getText();
-				
-				//Check the evalString method in JMol 
-				loadingMol0=true;
-				loadingMol1=false;
-				
-				if(loadFromPubchem)
-				{
-					view0.evalString(
-							"try{" + //If the molecule fails to load an error dialogue box pops up...
-									"load \":"+currentMolecule+"\"" +
-							"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
-				    view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");
-				}
-				else
-				{
-					view0.evalString(
-							"try{" + //If the molecule fails to load an error dialogue box pops up...
-									"load \"$"+currentMolecule+"\"" +
-							"}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
-				    view1.evalString("try{load \"$"+currentMolecule+"\"}catch(e){}");
-				}
+                loadMoleculesWithCheck();
 			}
 			
 			//Called if the SPIN On/Off button is hit to spin both molecules.
@@ -1210,17 +1076,17 @@ public class Molly extends Applet
                 //Check to see if there have been any transformations...  if so undo them
                 if(reflected)
                 {
-                    view1.evalString("load \":"+currentMolecule+"\";");
+                    reloadMoleculeView1();
                     reflected = !reflected;
                 }
                 else if (rotated)
                 {
-                	view1.evalString("load \":"+currentMolecule+"\";");
+                	reloadMoleculeView1();
                 	rotated = !rotated;
                 }
                 else if(rotatedAndReflected)
                 {
-                	view1.evalString("load \":"+currentMolecule+"\";");
+                	reloadMoleculeView1();
                 	rotatedAndReflected = !rotatedAndReflected;
                 }
                 else if(inverted) 
@@ -1336,10 +1202,95 @@ public class Molly extends Applet
 			//Locks the axis rotation so that it does not move when the perspective is changed. 
             else if(e.getSource() == axisRotLockBox)
             {
-            	axisRotLock = !axisRotLock;
+            	axisRotLock = axisRotLockBox.isSelected();
+                if (axisRotLock)
+                    noneAlignAxis.setSelected(true);
+                xAlignAxis.setEnabled(!axisRotLock);
+                yAlignAxis.setEnabled(!axisRotLock);
+                zAlignAxis.setEnabled(!axisRotLock);
+                noneAlignAxis.setEnabled(!axisRotLock);
             }
 		}		
 	}
+    
+    private void loadMoleculesWithCheck()
+    {
+        numMolsToLoad = 2;
+
+        //Tell Jmol to try to load the specified molecule 
+        if(loadFromPubchem)
+        {
+            view0.evalString(
+                    "try{" + //If the molecule fails to load an error dialogue box pops up...
+                            "load \":"+currentMolecule+"\"" +
+                    "}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
+            view1.evalString("try{load \":"+currentMolecule+"\"}catch(e){}");
+        }
+        else
+        {
+            view0.evalString(
+                    "try{" + //If the molecule fails to load an error dialogue box pops up...
+                            "load \"$"+currentMolecule+"\"" +
+                    "}catch(e){prompt \"Molecule "+currentMolecule+" not found.\"}");
+            view1.evalString("try{load \"$"+currentMolecule+"\"}catch(e){}");
+        }
+    }
+    
+    private void reloadMoleculeView1()
+    {
+        if(loadFromPubchem)
+        {
+            view1.evalString("load \":"+currentMolecule+"\";");
+        }
+        else
+        {
+            view1.evalString("load \"$"+currentMolecule+"\";");
+        }
+    }
+
+    //Adjusts the location of axis1
+    private void repositionAxis()
+    {
+        //Its rotation should be opposite to that of the molecule.  
+        //This method of vector rotation from http://www.blitzbasic.com/Community/posts.php?topic=57616
+
+        float[] aa = jmolPanel1.getAxisAngle();
+
+        //Store the axis values and the angle of rotation.
+        // u,v,w is the axis of rotation and a is the rotation amount in degrees
+        double uPerspective = aa[0];
+        double vPerspective = aa[1];
+        double wPerspective = aa[2];
+        double aPerspective = aa[3];
+
+        //Sets the original location of the drawn axis.
+        //We cannot just set these values, because then we cannot control the length of the
+        //  axis depending on the size of the molecule.  We will load the axis as usual and
+        //  then rotate it where we want it.  
+
+        Vector3 orig = new Vector3(axisRadius, 0, 0);
+
+        Matrix3x3 preliminaryYRot = Matrix3x3.rotationMatrix(yAxisRot);
+
+        orig = preliminaryYRot.transform(orig);
+
+        double x = orig.x;
+        double y = 0;
+        double z = orig.y;
+
+        //Create the matrix to multiply our axis vector by.
+        RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, -aPerspective);
+
+        //do the matrix multiplication/
+        double[] rotVector = rotMat.timesXYZ(x, y, z);
+
+        axisEnd0.x = rotVector[0];
+        axisEnd0.y = rotVector[1];
+        axisEnd0.z = rotVector[2];	
+
+        if(axisShown)drawAxis();
+        if(planeShown)drawCircle();		
+    }
 	
 	/**
 	 * This class listens to Jmol views and responds when certain events occur.  
@@ -1359,7 +1310,6 @@ public class Molly extends Applet
 		public void notifyCallback(EnumCallback type, Object[] data) 
 		{
 			@SuppressWarnings("unused")
-			String callback = callbacks.get(type);
 			String strInfo = (data == null || data[1] == null ? null : data[1]
 			          .toString());
 			
@@ -1385,45 +1335,7 @@ public class Molly extends Applet
                     if(axisRotLock)
                     {
                         //We also need to adjust the location of axis1
-                        //Its rotation should be opposite to that of the molecule.  
-                        //This method of vector rotation from http://www.blitzbasic.com/Community/posts.php?topic=57616
-
-                        float[] aa = jmolPanel1.getAxisAngle();
-
-                        //Store the axis values and the angle of rotation.
-                        // u,v,w is the axis of rotation and a is the rotation amount in degrees
-                        uPerspective = aa[0];
-                        vPerspective = aa[1];
-                        wPerspective = aa[2];
-                        aPerspective = aa[3];
-
-                        //Sets the original location of the drawn axis.
-                        //We cannot just set these values, because then we cannot control the length of the
-                        //  axis depending on the size of the molecule.  We will load the axis as usual and
-                        //  then rotate it where we want it.  
-
-                        Vector3 orig = new Vector3(axisRadius, 0, 0);
-
-                        Matrix3x3 preliminaryYRot = Matrix3x3.rotationMatrix(yAxisRot);
-
-                        orig = preliminaryYRot.transform(orig);
-
-                        double x = orig.x;
-                        double y = 0;
-                        double z = orig.y;
-
-                        //Create the matrix to multiply our axis vector by.
-                        RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, -aPerspective);
-
-                        //do the matrix multiplication/
-                        double[] rotVector = rotMat.timesXYZ(x, y, z);
-
-                        axisEnd0.x = rotVector[0];
-                        axisEnd0.y = rotVector[1];
-                        axisEnd0.z = rotVector[2];	
-
-                        if(axisShown)drawAxis();
-                        if(planeShown)drawCircle();		
+                        repositionAxis();
                     }
 					break; 
 				case ECHO:
@@ -1431,17 +1343,13 @@ public class Molly extends Applet
 				case APPLETREADY:
 					break;
 				case LOADSTRUCT: //Called when the applet is finished loading the new mol.
-					//When this case has been hit twice, then it will set both of the
-					//  loading booleans to false.  This is when you know they are both
-					//  done loading...
-			
-					//if it has been called once, then set the second one false
-					if(!loadingMol0)
-					{
-						loadingMol1 = false;
-						changeCurrentMolLabel();
-					}
-					else loadingMol0 = false;
+					//When this case has been hit twice, then it will increment the variable
+                    //twice.  This is when you know they are both done loading.
+                    numMolsToLoad--;
+                    if (numMolsToLoad == 0)
+                    {
+                        changeCurrentMolLabel();
+                    }
 					break;
 			}
 		}
@@ -1451,32 +1359,26 @@ public class Molly extends Applet
 		{
 			switch (type) 
 			{
+			  case LOADSTRUCT:
+			  case CLICK:
+				  return true;
 			  case ANIMFRAME:
 			  case ECHO:
-				  return true;
 			  case ERROR:
 			  case EVAL:
-			  case LOADSTRUCT:
-				  return true;
 			  case MEASURE:
 			  case MESSAGE:
-				  return true;
 			  case PICK:
 			  case SYNC:
 			  case SCRIPT:
-			    return true;
 			  case APPLETREADY:
-				  return true;// Jmol 12.1.48
-			  case ATOMMOVED:  // Jmol 12.1.48
-				  return true;
-			  case CLICK:
-				  return true;
+			  case ATOMMOVED:
 			  case HOVER:
 			  case MINIMIZATION:
 			  case RESIZE:
-			    break;
+              default:
+                  return false;
 			}
-		    return (callbacks.get(type) != null);
 		}
 
 		@Override
@@ -1531,74 +1433,18 @@ public class Molly extends Applet
 	 */
 	private class MyChangeListener implements ChangeListener
 	{
+        @Override
 		public void stateChanged(ChangeEvent e) 
 		{
 		    if(e.getSource() == axisRotSlider)
 		    {
-		    	//This is where we handle the linking of perspectives for the jmol windows
-				//Every time there is a mouse event with view1 this will run.
-				//view1.evalString("show STATE;");  //Get the current perspective
-				
 				int yValue = axisRotSlider.getValue();
 		    	axisRotField.setText(""+yValue);
-		    	
-		    	//This gets us the adjusted value (the ammount of the new rotation...)
-		    	yValue = yValue - yAxisRot;
 		    	
 		    	//Make sure we keep track of just how far we have rotated...
 		    	yAxisRot = axisRotSlider.getValue();
 				
-                //We also need to adjust the location of axis1
-                //Its rotation should be opposite to that of the molecule.  
-                //This method of vector rotation from http://www.blitzbasic.com/Community/posts.php?topic=57616
-
-                float[] aa = jmolPanel1.getAxisAngle();
-
-                //Store the axis values and the angle of rotation.
-                // u,v,w is the axis of rotation and a is the rotation amount in degrees
-                uPerspective = aa[0];
-                vPerspective = aa[1];
-                wPerspective = aa[2];
-                aPerspective = aa[3];
-
-                //Sets the original location of the drawn axis.
-                //We cannot just set these values, because then we cannot control the length of the
-                //  axis depending on the size of the molecule.  We will load the axis as usual and
-                //  then rotate it where we want it.  
-
-                Vector3 orig = new Vector3(axisRadius, 0, 0);
-
-                Matrix3x3 preliminaryYRot = Matrix3x3.rotationMatrix(yAxisRot);
-
-                orig = preliminaryYRot.transform(orig);
-
-                double x = orig.x;
-                double y = 0;
-                double z = orig.y;
-                //Create the matrix to multiply our axis vector by.
-
-                //Wierd things happen when this is run without the Perspective state being changed.
-                //  So we will only modify from the perspective if there is actually something that has happened.
-                if(!(uPerspective==0.0 && wPerspective ==0.0 ))
-                {
-                    RotationMatrix rotMat = new RotationMatrix(0, 0, 0, uPerspective, vPerspective, wPerspective, Math.toRadians(-aPerspective));
-
-                    //do the matrix multiplication
-                    double[] rotVector = rotMat.timesXYZ(x, y, z);
-
-                    axisEnd0.x = rotVector[0];
-                    axisEnd0.y = rotVector[1];
-                    axisEnd0.z = rotVector[2];	
-                }
-                else
-                {
-                    axisEnd0.x = x;
-                    axisEnd0.y = y;
-                    axisEnd0.z = z;	
-                }																
-
-                if(axisShown)drawAxis();
-                if(planeShown)drawCircle();
+                repositionAxis();
 		    }
 		}
 	}
