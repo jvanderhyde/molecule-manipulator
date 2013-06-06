@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD>
+   <TITLE>Molly, the Molecule Manipulator - How to use</TITLE>
+</HEAD>
+<BODY>
+
+<H3>Molly, the Molecule Manipulator</H3>
+<HR WIDTH="100%"/>
+<table>
+    <col style="width:25%">
+    <col style="width:25%">
+    <col style="width:25%">
+    <col style="width:25%">
+    <tr>
+        <td>&nbsp;<a href="index.html">Home</a>&nbsp;</td>
+        <td>&nbsp;<a href="applet.html">Applet</a>&nbsp;</td>
+        <td>&nbsp;How to use&nbsp;</td>
+        <td>&nbsp;<a href="download.html">Download</a>&nbsp;</td>
+</tr></table>
+<HR WIDTH="100%"/>
+
+Loading a Molecule:
+<ul>
+    <li>Select which database you would like to try and load a model from (NCS/NIH or PubChem).  Enter the name of the desired molecule in the text box at the top of the application window and click the SELECT button. If the molecule is not found, then a dialogue box will pop up with this alert. </li>
+    <li>Note that you must be connected to the internet so Molly can download the new molecule from the database. 
+</ul>
+
+Basic Jmol Usage:
+<ul>
+    <li>You can rotate around the molecule models in the Jmol viewers by clicking and dragging inside the viewers with the mouse.  Hold down the SHIFT key while clicking and dragging right and left to rotate the molecule around the viewport&rsquo;s z axis.  To zoom in or out either spin the scroll wheel on the mouse or hold down the SHIFT key while clicking and dragging up and down.</li>
+    <li>To have the mouse interactions in the right Jmol viewer mirrored in the left Jmol viewer, select the Link Rotation check box.  All the rotating or zooming done in the right viewer will also occur in the left.</li>
+    <li>To spin the molecule in both Jmol viewers continuously (to allow for inspection and comparison of the models from different angles) press the SPIN On/Off button. </li>
+    <li>The RESET button below each Jmol viewer resets the molecule to its original state including any rotations or transformations performed. </li>
+    <li>For more information about how to use the Jmol interface, see the <a href="http://wiki.jmol.org/index.php/Mouse_Manual">Jmol page</a>.</li>
+</ul>
+
+Molecule Transformations:
+<ul>
+    <li>The tabs on the left side of the application window allow you to select which symmetry transformation you wish to perform. You can choose from ROTATION, INVERSION, REFLECTION, and ROTATION AND REFLECTION.</li>
+    <li>The ROTATION and ROT &amp; REF tabs require the user to select the desired angle of rotation from the drop-down before performing the transformation.</li>
+    <li>After selecting your desired parameters (axis/plane and angle), click the button and the transformation will be performed on the model in the right Jmol viewer. The model in the left Jmol viewer will not be affected. This allows you to compare the &ldquo;before&rdquo; and &ldquo;after&rdquo; images of the transformation and see if the molecule is symmetric.</li>
+</ul>
+
+Axis/Plane Options:
+<ul>
+    <li>The Axis/Plane Options can be found in the bottom left-hand corner of the application window.  These tools allow the user to specify exactly where the axis of rotation or the plane of reflection should be located.</li>
+    <li>Lock Axis&mdash;toggles whether the axis/plane will move as the perspective of the viewer is changed or if it will stay stationary.</li>
+    <li>Show Axis&mdash;toggles whether the axis of rotation is displayed in the right Jmol viewer.</li>
+    <li>Show Plane&mdash;toggles whether the plane of reflection is displayed in the right Jmol viewer.</li>
+    <li>The Align X, Align Y, and Align Z buttons allow the user to snap the axis of rotation to the molecular x, y, or z axis.  </li>
+</ul>
+
+</BODY>
+</HTML>
